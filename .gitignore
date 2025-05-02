@@ -1,0 +1,59 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Ambiente
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Diretórios de build
+/frontend/build/
+/frontend/dist/
+/backend/dist/
+/backend/build/
+
+# Arquivos de dependência
+/.pnp
+.pnp.js
+
+# Cobertura de testes
+/coverage
+
+# Logs
+logs
+*.log
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.idea/
+.vscode/
+*.sublime-*
+*.swp
+*.swo
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.bak
+
+# Arquivos de debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# MongoDB
+*.mongodb
+
+# Arquivos de configuração local
+config.local.js
