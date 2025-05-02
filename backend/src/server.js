@@ -32,6 +32,13 @@ const commentRoutes = require('./routes/commentRoutes');
 app.use('/api/movies', movieRoutes);
 app.use('/api/comments', commentRoutes);
 
+// Import error handling middleware
+const { notFound, errorHandler } = require('./middleware/errorHandler');
+
+// Apply error handling middleware
+app.use(notFound);
+app.use(errorHandler);
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
