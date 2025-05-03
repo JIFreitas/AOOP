@@ -22,6 +22,9 @@ const MovieDetail: React.FC = () => {
     rating: 5
   });
 
+  // Estado para controlar a visibilidade do formulário
+  const [showCommentForm, setShowCommentForm] = useState<boolean>(false);
+
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return;
@@ -70,7 +73,7 @@ const MovieDetail: React.FC = () => {
 
     try {
       const commentData = {
-        movieId: id,
+        movie_id: id,
         name: newComment.name,
         text: newComment.text,
         rating: newComment.rating
@@ -86,6 +89,11 @@ const MovieDetail: React.FC = () => {
       console.error('Error adding comment:', err);
       alert('Erro ao adicionar comentário');
     }
+  };
+
+  // Toggle para o formulário de comentários
+  const toggleCommentForm = () => {
+    setShowCommentForm(!showCommentForm);
   };
 
   if (loading) {
@@ -106,9 +114,10 @@ const MovieDetail: React.FC = () => {
   return (
     <div>
       <div className="mb-4">
-        <Link to="/" className="btn btn-outline-secondary mb-3">
-          &laquo; Voltar para lista de filmes
+        <Link to="/" className="btn btn-primary float-start mb-3">
+          Voltar
         </Link>
+        <div className="clearfix"></div>
       </div>
 
       <div className="row mb-5">
@@ -148,10 +157,10 @@ const MovieDetail: React.FC = () => {
                     <div className="card-header bg-warning text-dark">IMDB</div>
                     <div className="card-body">
                       <p className="mb-1">
-                        <strong>Classificação:</strong> {movie.imdb.rating}/10
+                        <strong>Classificação:</strong> {movie.imdb.rating ? movie.imdb.rating : '?'}/10
                       </p>
                       <p className="mb-1">
-                        <strong>Votos:</strong> {movie.imdb.votes.toLocaleString()}
+                        <strong>Votos:</strong> {movie.imdb.votes ? movie.imdb.votes.toLocaleString() : 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -230,16 +239,24 @@ const MovieDetail: React.FC = () => {
 
       <div className="row mt-5">
         <div className="col-12">
-          <h2 className="mb-4">Comentários ({comments.length})</h2>
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h2 className="mb-0">Comentários ({comments.length})</h2>
+            <button 
+              className={`btn ${showCommentForm ? 'btn-secondary' : 'btn-primary'}`}
+              onClick={toggleCommentForm}
+            >
+              {showCommentForm ? 'Fechar formulário' : 'Adicionar comentário'}
+            </button>
+          </div>
           
-          <div className="card mb-4">
-            <div className="card-header">
+          <div className={`card mb-4 ${showCommentForm ? '' : 'd-none'}`}>
+            <div className="card-header bg-light">
               <h3 className="h5 mb-0">Adicionar um comentário</h3>
             </div>
             <div className="card-body">
               <form onSubmit={handleSubmitComment}>
                 <div className="mb-3">
-                  <label htmlFor="name" className="form-label">Nome</label>
+                  <label htmlFor="name" className="form-label fw-bold text-start d-block">Nome</label>
                   <input
                     type="text"
                     className="form-control"
@@ -252,7 +269,7 @@ const MovieDetail: React.FC = () => {
                 </div>
                 
                 <div className="mb-3">
-                  <label htmlFor="text" className="form-label">Comentário</label>
+                  <label htmlFor="text" className="form-label fw-bold text-start d-block">Comentário</label>
                   <textarea
                     className="form-control"
                     id="text"
@@ -265,7 +282,7 @@ const MovieDetail: React.FC = () => {
                 </div>
                 
                 <div className="mb-3">
-                  <label htmlFor="rating" className="form-label">Avaliação</label>
+                  <label htmlFor="rating" className="form-label fw-bold text-start d-block">Avaliação</label>
                   <select
                     className="form-select"
                     id="rating"
@@ -281,9 +298,18 @@ const MovieDetail: React.FC = () => {
                   </select>
                 </div>
                 
-                <button type="submit" className="btn btn-primary">
-                  Enviar Comentário
-                </button>
+                <div className="d-flex justify-content-between">
+                  <button 
+                    type="button" 
+                    className="btn btn-outline-secondary" 
+                    onClick={toggleCommentForm}
+                  >
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Enviar Comentário
+                  </button>
+                </div>
               </form>
             </div>
           </div>
@@ -296,15 +322,17 @@ const MovieDetail: React.FC = () => {
                 <div key={comment._id} className="card mb-3">
                   <div className="card-body">
                     <div className="d-flex justify-content-between align-items-center mb-2">
-                      <h5 className="card-title mb-0">{comment.name}</h5>
+                      <div>
+                        <h5 className="card-title mb-0">{comment.name}</h5>
+                        <span className="text-dark">
+                          {new Date(comment.date).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
                       <div className="badge bg-primary">
                         {comment.rating ? comment.rating : '?'}/5 ⭐
                       </div>
                     </div>
                     <p className="card-text">{comment.text}</p>
-                    <small className="text-muted">
-                      {new Date(comment.date).toLocaleDateString('pt-BR')}
-                    </small>
                   </div>
                 </div>
               ))}

@@ -8,6 +8,7 @@ exports.getMovies = async (req, res) => {
     const skip = (page - 1) * limit;
     const searchQuery = req.query.search || '';
     const genre = req.query.genre || '';
+    const sort = req.query.sort || 'title_asc';
     
     let query = {};
     
@@ -26,10 +27,49 @@ exports.getMovies = async (req, res) => {
       query.genres = { $regex: genre, $options: 'i' };
     }
 
-    const movies = await Movie.find(query)
-      .sort({ title: 1 })
-      .skip(skip)
-      .limit(limit);
+    // Configurar a ordenação com base no parâmetro sort
+    let sortConfig = { title: 1 }; // Padrão: título em ordem crescente
+    
+    // Adicionar filtro adicional para filmes com avaliação se estiver ordenando por avaliação
+    if (sort === 'rating_asc' || sort === 'rating_desc') {
+      // Garantir que apenas filmes com avaliação do IMDB sejam incluídos
+      // Usa um filtro mais robusto para garantir que só apareçam filmes com avaliação válida
+      query['imdb.rating'] = { $exists: true, $ne: null, $gt: 0 };
+      
+      // Garantir que o objeto imdb existe também
+      query['imdb'] = { $exists: true, $ne: null };
+    }
+    
+    switch(sort) {
+      case 'title_asc':
+        sortConfig = { title: 1 };
+        break;
+      case 'title_desc':
+        sortConfig = { title: -1 };
+        break;
+      case 'year_asc':
+        sortConfig = { year: 1 };
+        break;
+      case 'year_desc':
+        sortConfig = { year: -1 };
+        break;
+      case 'rating_asc':
+        sortConfig = { 'imdb.rating': 1 };
+        break;
+      case 'rating_desc':
+        sortConfig = { 'imdb.rating': -1 };
+        break;
+      default:
+        sortConfig = { title: 1 };
+    }
+
+    // Usando o método aggregate para poder usar allowDiskUse
+    const movies = await Movie.aggregate([
+      { $match: query },
+      { $sort: sortConfig },
+      { $skip: skip },
+      { $limit: limit }
+    ]).option({ allowDiskUse: true });
       
     const total = await Movie.countDocuments(query);
     
@@ -67,6 +107,8 @@ exports.getMovieById = async (req, res) => {
 exports.getGenres = async (req, res) => {
   try {
     const genres = await Movie.distinct('genres');
+    // Ordenar gêneros alfabeticamente
+    genres.sort();
     res.json(genres);
   } catch (err) {
     res.status(500).json({ 

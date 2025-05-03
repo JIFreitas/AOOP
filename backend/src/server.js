@@ -27,10 +27,12 @@ app.get('/api/status', (req, res) => {
 // Import routes
 const movieRoutes = require('./routes/movieRoutes');
 const commentRoutes = require('./routes/commentRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 // Use routes
 app.use('/api/movies', movieRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/auth', authRoutes);
 
 // Import error handling middleware
 const { notFound, errorHandler } = require('./middleware/errorHandler');

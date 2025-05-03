@@ -1,26 +1,78 @@
 import axios from 'axios';
 import { Movie } from '../types/MovieTypes';
+import { handleApiError, handleAndNotifyError } from './errorHandler';
 
 const API_URL = 'http://localhost:5000/api';
 
 // Interface para o objeto Comment
 export interface Comment {
   _id: string;
-  movieId: string;
   name: string;
+  email?: string;
+  movie_id: string;
   text: string;
-  rating: number;
+  rating?: number;
   date: string;
 }
 
+// Interface para novo comentário
+export interface NewComment {
+  name: string;
+  email?: string;
+  movie_id: string;
+  text: string;
+  rating?: number;
+}
+
+// Interface para a resposta paginada
+export interface PaginatedResponse<T> {
+  movies: T[];
+  totalPages: number;
+  currentPage: number;
+  total: number;
+}
+
+// Enum para as opções de ordenação
+export enum SortOption {
+  TITLE_ASC = 'title_asc',
+  TITLE_DESC = 'title_desc',
+  YEAR_ASC = 'year_asc',
+  YEAR_DESC = 'year_desc',
+  RATING_ASC = 'rating_asc',
+  RATING_DESC = 'rating_desc'
+}
+
+// Interface para os parâmetros de filtro
+export interface MovieFilterParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  genre?: string;
+  sort?: SortOption;
+}
+
 // Funções para interagir com a API de filmes
-export const fetchMovies = async (): Promise<any> => {
+export const fetchMovies = async (params: MovieFilterParams = {}): Promise<PaginatedResponse<Movie>> => {
+  const { page = 1, limit = 20, search = '', genre = '', sort = SortOption.TITLE_ASC } = params;
   try {
-    const response = await axios.get(`${API_URL}/movies`);
-        return response.data;
+    const response = await axios.get(`${API_URL}/movies`, {
+      params: {
+        page,
+        limit,
+        search,
+        genre,
+        sort
+      }
+    });
+    return response.data;
   } catch (error) {
-    console.error('Error fetching movies:', error);
-    return [];
+    handleAndNotifyError(error);
+    return {
+      movies: [],
+      totalPages: 0,
+      currentPage: page,
+      total: 0
+    };
   }
 };
 
@@ -29,8 +81,18 @@ export const fetchMovieById = async (id: string): Promise<Movie | null> => {
     const response = await axios.get(`${API_URL}/movies/${id}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching movie ${id}:`, error);
+    handleAndNotifyError(error);
     return null;
+  }
+};
+
+export const fetchGenres = async (): Promise<string[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/movies/genres`);
+    return response.data;
+  } catch (error) {
+    handleAndNotifyError(error);
+    return [];
   }
 };
 
@@ -40,17 +102,17 @@ export const fetchCommentsByMovieId = async (movieId: string): Promise<Comment[]
     const response = await axios.get(`${API_URL}/comments/movie/${movieId}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching comments for movie ${movieId}:`, error);
+    handleAndNotifyError(error);
     return [];
   }
 };
 
-export const addComment = async (comment: Omit<Comment, '_id' | 'date'>): Promise<Comment | null> => {
+export const addComment = async (comment: NewComment): Promise<Comment | null> => {
   try {
     const response = await axios.post(`${API_URL}/comments`, comment);
     return response.data;
   } catch (error) {
-    console.error('Error adding comment:', error);
-    return null;
+    const apiError = handleApiError(error);
+    throw apiError; // Propaga o erro tratado para que o componente possa reagir
   }
 };
