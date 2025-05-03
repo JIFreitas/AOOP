@@ -1,36 +1,31 @@
 const Comment = require('../models/Comment');
 const mongoose = require('mongoose');
 
-// Get comments for a specific movie
 exports.getMovieComments = async (req, res) => {
   try {
-    // Validar se o ID do filme é um ObjectId válido
     if (!mongoose.Types.ObjectId.isValid(req.params.movieId)) {
       return res.status(400).json({ message: 'ID de filme inválido' });
     }
     
     const comments = await Comment.find({ movie_id: req.params.movieId })
-      .sort({ date: -1 }); // Ordenar pelos comentários mais recentes primeiro
+      .sort({ date: -1 });
       
     res.json(comments);
   } catch (err) {
     res.status(500).json({ 
-      message: 'Erro ao buscar comentários',
+      message: 'Erro ao procurar comentários',
       error: err.message 
     });
   }
 };
 
-// Add a new comment
 exports.addComment = async (req, res) => {
   const { name, email, movie_id, text } = req.body;
   
-  // Validações básicas
   if (!movie_id || !text) {
     return res.status(400).json({ message: 'ID do filme e texto são obrigatórios' });
   }
   
-  // Validar se o ID do filme é um ObjectId válido
   if (!mongoose.Types.ObjectId.isValid(movie_id)) {
     return res.status(400).json({ message: 'ID de filme inválido' });
   }
@@ -54,7 +49,6 @@ exports.addComment = async (req, res) => {
   }
 };
 
-// Delete a comment
 exports.deleteComment = async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
