@@ -4,7 +4,6 @@ import { handleApiError, handleAndNotifyError } from './errorHandler';
 
 const API_URL = 'http://localhost:5000/api';
 
-// Interface para o objeto Comment
 export interface Comment {
   _id: string;
   name: string;
@@ -15,7 +14,6 @@ export interface Comment {
   date: string;
 }
 
-// Interface para novo comentário
 export interface NewComment {
   name: string;
   email?: string;
@@ -24,7 +22,6 @@ export interface NewComment {
   rating?: number;
 }
 
-// Interface para a resposta paginada
 export interface PaginatedResponse<T> {
   movies: T[];
   totalPages: number;
@@ -32,7 +29,6 @@ export interface PaginatedResponse<T> {
   total: number;
 }
 
-// Enum para as opções de ordenação
 export enum SortOption {
   TITLE_ASC = 'title_asc',
   TITLE_DESC = 'title_desc',
@@ -42,7 +38,6 @@ export enum SortOption {
   RATING_DESC = 'rating_desc'
 }
 
-// Interface para os parâmetros de filtro
 export interface MovieFilterParams {
   page?: number;
   limit?: number;
@@ -51,7 +46,6 @@ export interface MovieFilterParams {
   sort?: SortOption;
 }
 
-// Funções para interagir com a API de filmes
 export const fetchMovies = async (params: MovieFilterParams = {}): Promise<PaginatedResponse<Movie>> => {
   const { page = 1, limit = 20, search = '', genre = '', sort = SortOption.TITLE_ASC } = params;
   try {
@@ -96,7 +90,6 @@ export const fetchGenres = async (): Promise<string[]> => {
   }
 };
 
-// Funções para interagir com a API de comentários
 export const fetchCommentsByMovieId = async (movieId: string): Promise<Comment[]> => {
   try {
     const response = await axios.get(`${API_URL}/comments/movie/${movieId}`);
@@ -113,6 +106,6 @@ export const addComment = async (comment: NewComment): Promise<Comment | null> =
     return response.data;
   } catch (error) {
     const apiError = handleApiError(error);
-    throw apiError; // Propaga o erro tratado para que o componente possa reagir
+    throw apiError;
   }
 };

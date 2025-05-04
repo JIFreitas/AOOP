@@ -22,7 +22,6 @@ const MovieList: React.FC = () => {
     sort: SortOption.TITLE_ASC
   });
   
-  // Carregar gêneros no carregamento inicial
   useEffect(() => {
     const loadGenres = async () => {
       const genresList = await fetchGenres();
@@ -32,7 +31,6 @@ const MovieList: React.FC = () => {
     loadGenres();
   }, []);
 
-  // Buscar filmes quando os filtros mudarem
   useEffect(() => {
     const getMovies = async () => {
       try {
@@ -54,7 +52,6 @@ const MovieList: React.FC = () => {
     getMovies();
   }, [filterParams]);
 
-  // Lidar com mudança de página
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
     setFilterParams(prev => ({
@@ -63,19 +60,17 @@ const MovieList: React.FC = () => {
     }));
   };
 
-  // Lidar com aplicação de filtros
   const handleApplyFilters = (e: React.FormEvent) => {
     e.preventDefault();
     setFilterParams(prev => ({
       ...prev,
-      page: 1, // Volta para a primeira página ao aplicar novos filtros
+      page: 1,
       search: searchQuery,
       genre: selectedGenre,
       sort: sortOption
     }));
   };
 
-  // Lidar com limpeza de filtros
   const handleClearFilters = () => {
     setSearchQuery('');
     setSelectedGenre('');
@@ -89,27 +84,49 @@ const MovieList: React.FC = () => {
     });
   };
 
-  // Generate array of page numbers to display
   const getPaginationNumbers = () => {
-    const pageNumbers = [];
-    const maxPagesToShow = 5;
-    
-    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-    let endPage = startPage + maxPagesToShow - 1;
-    
-    if (endPage > totalPages) {
-      endPage = totalPages;
-      startPage = Math.max(1, totalPages - maxPagesToShow + 1);
+    // Se houver menos de 8 páginas, simplesmente mostre todas
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
     
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
+    // Caso contrário, crie uma paginação mais complexa com elipses
+    const pageNumbers: (number | {type: string, value: string, targetPage: number})[] = [];
+    
+    // Sempre adicione página 1
+    pageNumbers.push(1);
+    
+    // Se a página atual estiver próxima ao início, não mostre a primeira elipse
+    if (currentPage <= 3) {
+      pageNumbers.push(2, 3, 4);
+    } 
+    // Se a página atual estiver próxima ao fim, não mostre a última elipse
+    else if (currentPage >= totalPages - 2) {
+      // Elipse que leva para uma página anterior (currentPage - 3)
+      pageNumbers.push({type: 'prev-ellipsis', value: '...', targetPage: totalPages - 4});
+      pageNumbers.push(totalPages - 3, totalPages - 2, totalPages - 1);
+    } 
+    // Se estiver no meio, mostre elipses nos dois lados
+    else {
+      // Elipse que leva para uma página anterior (currentPage - 3)
+      pageNumbers.push({type: 'prev-ellipsis', value: '...', targetPage: currentPage - 3});
+      pageNumbers.push(currentPage - 1, currentPage, currentPage + 1);
+    }
+    
+    // Se não estamos muito perto do fim, mostre a elipse final
+    if (currentPage < totalPages - 3) {
+      // Elipse que leva para uma página posterior (currentPage + 3)
+      pageNumbers.push({type: 'next-ellipsis', value: '...', targetPage: currentPage + 3});
+    }
+    
+    // Sempre adicione a última página se não for igual à primeira
+    if (totalPages > 1) {
+      pageNumbers.push(totalPages);
     }
     
     return pageNumbers;
   };
 
-  // Renderizar nome amigável da opção de ordenação
   const getSortOptionLabel = (option: SortOption): string => {
     switch (option) {
       case SortOption.TITLE_ASC:
@@ -129,6 +146,15 @@ const MovieList: React.FC = () => {
     }
   };
 
+  // Função para verificar se existem filtros ativos
+  const hasActiveFilters = (): boolean => {
+    return (
+      searchQuery !== '' || 
+      selectedGenre !== '' || 
+      sortOption !== SortOption.TITLE_ASC
+    );
+  };
+
   if (loading && currentPage === 1 && !movies.length) {
     return <div className="text-center mt-5"><div className="spinner-border" role="status"></div></div>;
   }
@@ -139,12 +165,11 @@ const MovieList: React.FC = () => {
 
   return (
     <div>
-      <h1 className="mb-4">Filmes Disponíveis</h1>
+      <h1 className="mb-4 cosmic-title">MoviePlanet - O teu planeta pessoal de cinema.</h1>
       
-      {/* Filtros */}
-      <div className="card mb-4">
+      <div className="card space-card mb-4">
         <div className="card-body">
-          <h5 className="card-title">Filtros</h5>
+          <h4 className="card-title">Filtros</h4>
           <form onSubmit={handleApplyFilters}>
             <div className="row g-3">
               <div className="col-md-4">
@@ -153,21 +178,21 @@ const MovieList: React.FC = () => {
                   type="text"
                   className="form-control"
                   id="searchQuery"
-                  placeholder="Título, diretor, elenco..."
+                  placeholder="Título, realizador, sinopse, elenco..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               
               <div className="col-md-4">
-                <label htmlFor="genreSelect" className="form-label">Gênero</label>
+                <label htmlFor="genreSelect" className="form-label">Género</label>
                 <select 
                   className="form-select" 
                   id="genreSelect"
                   value={selectedGenre}
                   onChange={(e) => setSelectedGenre(e.target.value)}
                 >
-                  <option value="">Todos os gêneros</option>
+                  <option value="">Todos os géneros</option>
                   {genres.map((genre) => (
                     <option key={genre} value={genre}>
                       {genre}
@@ -194,12 +219,14 @@ const MovieList: React.FC = () => {
               
               <div className="col-12">
                 <div className="d-flex gap-2">
-                  <button type="submit" className="btn btn-primary">
+                  <button type="submit" className="btn btn-cosmic">
                     <i className="bi bi-search me-1"></i> Aplicar Filtros
                   </button>
-                  <button type="button" className="btn btn-outline-secondary" onClick={handleClearFilters}>
-                    <i className="bi bi-x-circle me-1"></i> Limpar Filtros
-                  </button>
+                  {hasActiveFilters() && (
+                    <button type="button" className="btn btn-cosmic-outline" onClick={handleClearFilters}>
+                      <i className="bi bi-x-circle me-1"></i> Limpar Filtros
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -207,21 +234,25 @@ const MovieList: React.FC = () => {
         </div>
       </div>
       
-      {/* Indicador de carregamento */}
       {loading && (
-        <div className="text-center my-3"><div className="spinner-border" role="status"></div></div>
+        <div className="text-center my-5">
+          <div className="spinner-border text-cosmic" role="status" style={{ width: "3rem", height: "3rem" }}>
+            <span className="visually-hidden">A carregar...</span>
+          </div>
+        </div>
       )}
       
-      {/* Status dos filtros */}
       {!loading && (
-        <div className="alert alert-info mb-4">
+        <div className="alert alert-cosmic mb-4">
           {totalMovies === 0 ? (
-            <span>Nenhum filme encontrado com os filtros aplicados.</span>
+            <span style={{ color: 'var(--nebula-teal)', textShadow: '0 0 5px rgba(8, 217, 214, 0.5)' }}>
+                Nenhum filme encontrado com os filtros aplicados.
+            </span>
           ) : (
-            <span>
-              Encontrados <strong>{totalMovies}</strong> filmes 
+            <span style={{ color: 'var(--nebula-teal)', textShadow: '0 0 5px rgba(8, 217, 214, 0.5)' }}>
+              Foram encontrados <strong>{totalMovies}</strong> filmes 
               {filterParams.search && <span> contendo "<strong>{filterParams.search}</strong>"</span>}
-              {filterParams.genre && <span> do gênero <strong>{filterParams.genre}</strong></span>}
+              {filterParams.genre && <span> do género <strong>{filterParams.genre}</strong></span>}
               {filterParams.sort !== SortOption.TITLE_ASC && 
                 <span> ordenados por <strong>{getSortOptionLabel(filterParams.sort || SortOption.TITLE_ASC)}</strong></span>
               }
@@ -229,8 +260,7 @@ const MovieList: React.FC = () => {
           )}
         </div>
       )}
-      
-      {/* Lista de filmes */}
+            
       <div className="row row-cols-1 row-cols-md-3 g-4 mb-4">
         {movies.length === 0 && !loading ? (
             <div>
@@ -238,7 +268,7 @@ const MovieList: React.FC = () => {
         ) : (
           movies.map(movie => (
             <div key={movie._id} className="col">
-              <div className="card h-100">
+              <div className="card space-card h-100">
                 {movie.poster ? (
                   <img 
                     src={movie.poster} 
@@ -247,22 +277,22 @@ const MovieList: React.FC = () => {
                     style={{ height: '300px', objectFit: 'cover' }} 
                   />
                 ) : (
-                  <div className="bg-secondary text-white d-flex justify-content-center align-items-center" style={{ height: '300px' }}>
-                    <span>Imagem não disponível</span>
+                  <div className="bg-space-navy text-white d-flex justify-content-center align-items-center" style={{ height: '300px', background: 'var(--space-navy)' }}>
+                    <span><i className="bi bi-camera me-2"></i> Imagem não disponível</span>
                   </div>
                 )}
                 <div className="card-body">
                   <h5 className="card-title">{movie.title}</h5>
                   <p className="card-text">
-                    <strong>Diretor:</strong> {movie.directors ? movie.directors.join(', ') : 'Não disponível'}<br />
-                    <strong>Ano:</strong> {movie.year}<br />
-                    <strong>Gênero:</strong> {movie.genres?.length ? movie.genres.join(', ') : 'Não disponível'}
+                    <strong className="text-star">Realizador:</strong> {movie.directors ? movie.directors.join(', ') : 'Não disponível'}<br />
+                    <strong className="text-star">Ano:</strong> {movie.year}<br />
+                    <strong className="text-star">Género:</strong> {movie.genres?.length ? movie.genres.join(', ') : 'Não disponível'}
                     {movie.imdb?.rating && (
-                      <><br /><strong>Avaliação:</strong> {movie.imdb.rating}/10</>
+                      <><br /><strong className="text-star">Avaliação:</strong> {movie.imdb.rating}/10 <i className="bi bi-star-fill text-warning"></i></>
                     )}
                   </p>
-                  <Link to={`/movie/${movie._id}`} className="btn btn-primary">
-                    Ver Detalhes
+                  <Link to={`/movie/${movie._id}`} className="btn btn-cosmic">
+                    <i className="bi bi-telescope-fill me-2"></i>Ver Detalhes
                   </Link>
                 </div>
               </div>
@@ -271,7 +301,6 @@ const MovieList: React.FC = () => {
         )}
       </div>
       
-      {/* Pagination controls */}
       {totalPages > 1 && (
         <nav aria-label="Navegação de páginas">
           <div className="d-flex justify-content-between align-items-center mb-3">
@@ -280,52 +309,81 @@ const MovieList: React.FC = () => {
             </p>
           </div>
           <ul className="pagination justify-content-center">
+            {/* Primeira página sempre visível */}
             <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
               <button 
                 className="page-link" 
                 onClick={() => handlePageChange(1)}
                 disabled={currentPage === 1}
+                title="Primeira página"
+                style={currentPage === 1 ? {backgroundColor: 'var(--space-navy)', color: 'var(--nebula-teal)', opacity: 0.6, borderColor: 'var(--nebula-teal)'} : {}}
               >
-                «
+                <i className="bi bi-chevron-double-left"></i>
               </button>
             </li>
+            
+            {/* Página anterior */}
             <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
               <button 
                 className="page-link" 
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
+                title="Página anterior"
+                style={currentPage === 1 ? {backgroundColor: 'var(--space-navy)', color: 'var(--nebula-teal)', opacity: 0.6, borderColor: 'var(--nebula-teal)'} : {}}
               >
-                Anterior
+                <i className="bi bi-chevron-left"></i>
               </button>
             </li>
             
-            {getPaginationNumbers().map(pageNum => (
-              <li key={pageNum} className={`page-item ${pageNum === currentPage ? 'active' : ''}`}>
-                <button 
-                  className="page-link" 
-                  onClick={() => handlePageChange(pageNum)}
-                >
-                  {pageNum}
-                </button>
-              </li>
-            ))}
+            {/* Números de página e elipses */}
+            {getPaginationNumbers().map((pageNum, index) => {
+              // Verificar se o item é um número ou um objeto de elipse
+              const isNumber = typeof pageNum === 'number';
+              const isCurrentPage = isNumber && pageNum === currentPage;
+              const ellipsis = !isNumber ? pageNum : null;
+              
+              return (
+                <li key={index} className={`page-item ${isCurrentPage ? 'active' : ''}`}>
+                  <button 
+                    className="page-link" 
+                    onClick={() => {
+                      if (isNumber) {
+                        handlePageChange(pageNum);
+                      } else if (ellipsis) {
+                        handlePageChange(ellipsis.targetPage);
+                      }
+                    }}
+                    title={ellipsis ? `Ir para a página ${ellipsis.targetPage}` : `Página ${pageNum}`}
+                  >
+                    {isNumber ? pageNum : ellipsis?.value}
+                  </button>
+                </li>
+              );
+            })}
             
+            {/* Próxima página */}
             <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
               <button 
                 className="page-link" 
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
+                title="Próxima página"
+                style={currentPage === totalPages ? {backgroundColor: 'var(--space-navy)', color: 'var(--nebula-teal)', opacity: 0.6, borderColor: 'var(--nebula-teal)'} : {}}
               >
-                Próxima
+                <i className="bi bi-chevron-right"></i>
               </button>
             </li>
+            
+            {/* Última página sempre visível */}
             <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
               <button 
                 className="page-link" 
                 onClick={() => handlePageChange(totalPages)}
                 disabled={currentPage === totalPages}
+                title="Última página"
+                style={currentPage === totalPages ? {backgroundColor: 'var(--space-navy)', color: 'var(--nebula-teal)', opacity: 0.6, borderColor: 'var(--nebula-teal)'} : {}}
               >
-                »
+                <i className="bi bi-chevron-double-right"></i>
               </button>
             </li>
           </ul>

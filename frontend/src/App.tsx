@@ -13,14 +13,16 @@ function App () {
     <Router>
       <div className="App">
         <Navbar />
-        <div className="container mt-4">
-          <Routes>
-            <Route path="/" element={<MovieList />} />
-            <Route path="/movie/:id" element={<MovieDetail />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/profile" element={<Profile />} />
-          </Routes>
+        <div className="main-content">
+          <div className="container mt-4">
+            <Routes>
+              <Route path="/" element={<MovieList />} />
+              <Route path="/movie/:id" element={<MovieDetail />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/profile" element={<Profile />} />
+            </Routes>
+          </div>
         </div>
       </div>
     </Router>

@@ -15,14 +15,12 @@ const MovieDetail: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Estado para o formulário de novo comentário
   const [newComment, setNewComment] = useState({
     name: '',
     text: '',
     rating: 5
   });
 
-  // Estado para controlar a visibilidade do formulário
   const [showCommentForm, setShowCommentForm] = useState<boolean>(false);
 
   useEffect(() => {
@@ -32,7 +30,6 @@ const MovieDetail: React.FC = () => {
       try {
         setLoading(true);
         
-        // Carrega o filme e seus comentários
         const movieData = await fetchMovieById(id);
         if (!movieData) {
           setError('Filme não encontrado');
@@ -83,7 +80,7 @@ const MovieDetail: React.FC = () => {
       
       if (addedComment) {
         setComments(prev => [addedComment, ...prev]);
-        setNewComment({ name: '', text: '', rating: 5 }); // Limpa o formulário
+        setNewComment({ name: '', text: '', rating: 5 });
       }
     } catch (err) {
       console.error('Error adding comment:', err);
@@ -91,7 +88,6 @@ const MovieDetail: React.FC = () => {
     }
   };
 
-  // Toggle para o formulário de comentários
   const toggleCommentForm = () => {
     setShowCommentForm(!showCommentForm);
   };
@@ -114,8 +110,8 @@ const MovieDetail: React.FC = () => {
   return (
     <div>
       <div className="mb-4">
-        <Link to="/" className="btn btn-primary float-start mb-3">
-          Voltar
+        <Link to="/" className="btn btn-cosmic float-start mb-3">
+          <i className="bi bi-arrow-left me-2"></i>Voltar
         </Link>
         <div className="clearfix"></div>
       </div>
@@ -125,42 +121,49 @@ const MovieDetail: React.FC = () => {
           {movie.poster ? (
             <img 
               src={movie.poster} 
-              className="img-fluid rounded" 
+              className="img-fluid rounded shadow" 
               alt={movie.title} 
+              style={{ border: '2px solid var(--space-accent)' }}
             />
           ) : (
-            <div className="bg-secondary text-white d-flex justify-content-center align-items-center rounded" style={{ height: '400px' }}>
-              <span>Imagem não disponível</span>
+            <div className="bg-space-navy text-white d-flex justify-content-center align-items-center rounded" style={{ 
+              height: '400px',
+              border: '2px solid var(--space-accent)',
+              background: 'var(--space-navy)'
+            }}>
+              <span><i className="bi bi-camera me-2"></i>Imagem não disponível</span>
             </div>
           )}
         </div>
         
         <div className="col-md-8">
-          <h1 className="mb-3">{movie.title}</h1>
+          <h1 className="mb-3 cosmic-title">{movie.title}</h1>
           
-          {/* Informações básicas do filme */}
-          <div className="mb-4">
-            <p><strong>Diretor:</strong> {movie.directors?.join(', ') || 'Não disponível'}</p>
-            <p><strong>Ano:</strong> {movie.year}</p>
-            <p><strong>Gêneros:</strong> {movie.genres?.join(', ') || 'Não disponível'}</p>
-            <p><strong>Duração:</strong> {movie.runtime ? `${movie.runtime} min` : 'Não disponível'}</p>
-            <p><strong>Elenco:</strong> {movie.cast?.join(', ') || 'Não disponível'}</p>
+          <div className="card space-card mb-4 p-3">
+            <div className="mb-4">
+              <p><strong className="text-star">Realizador:</strong> <span className="text-light">{movie.directors?.join(', ') || 'Não disponível'}</span></p>
+              <p><strong className="text-star">Ano:</strong> <span className="text-light">{movie.year}</span></p>
+              <p><strong className="text-star">Géneros:</strong> <span className="text-light">{movie.genres?.join(', ') || 'Não disponível'}</span></p>
+              <p><strong className="text-star">Duração:</strong> <span className="text-light">{movie.runtime ? `${movie.runtime} min` : 'Não disponível'}</span></p>
+              <p><strong className="text-star">Elenco:</strong> <span className="text-light">{movie.cast?.join(', ') || 'Não disponível'}</span></p>
+            </div>
           </div>
           
-          {/* Avaliações */}
           <div className="mb-4">
-            <h3>Avaliações</h3>
+            <h3 className="text-cosmic"><i className="bi bi-star me-2"></i>Avaliações</h3>
             <div className="row">
               {movie.imdb && (
-                <div className="col-md-6">
-                  <div className="card mb-3">
-                    <div className="card-header bg-warning text-dark">IMDB</div>
+                <div className="col-md-6 mb-3">
+                  <div className="card space-card h-100">
+                    <div className="card-header" style={{ background: '#f3ce13', color: '#121212' }}>
+                      <i className="bi bi-film me-2"></i>IMDB
+                    </div>
                     <div className="card-body">
                       <p className="mb-1">
-                        <strong>Classificação:</strong> {movie.imdb.rating ? movie.imdb.rating : '?'}/10
+                        <strong className="text-nebula-teal">Classificação:</strong> <span className="text-light">{movie.imdb.rating ? movie.imdb.rating : '?'}/10</span>
                       </p>
                       <p className="mb-1">
-                        <strong>Votos:</strong> {movie.imdb.votes ? movie.imdb.votes.toLocaleString() : 'N/A'}
+                        <strong className="text-nebula-teal">Votos:</strong> <span className="text-light">{movie.imdb.votes ? movie.imdb.votes.toLocaleString() : 'N/D'}</span>
                       </p>
                     </div>
                   </div>
@@ -168,21 +171,23 @@ const MovieDetail: React.FC = () => {
               )}
               
               {movie.tomatoes && (
-                <div className="col-md-6">
-                  <div className="card mb-3">
-                    <div className="card-header bg-danger text-white">Rotten Tomatoes</div>
+                <div className="col-md-6 mb-3">
+                  <div className="card space-card h-100">
+                    <div className="card-header" style={{ background: '#fa320a', color: 'white' }}>
+                      <i className="bi bi-award me-2"></i>Rotten Tomatoes
+                    </div>
                     <div className="card-body">
                       {movie.tomatoes.critic && (
                         <p className="mb-1">
-                          <strong>Críticos:</strong> {movie.tomatoes.critic.rating}/10 
-                          {movie.tomatoes.critic.meter ? ` (${movie.tomatoes.critic.meter}%)` : ''}
+                          <strong className="text-nebula-teal">Críticos:</strong> <span className="text-light">{movie.tomatoes.critic.rating}/10 
+                          {movie.tomatoes.critic.meter ? ` (${movie.tomatoes.critic.meter}%)` : ''}</span>
                         </p>
                       )}
                       
                       {movie.tomatoes.viewer && (
                         <p className="mb-0">
-                          <strong>Audiência:</strong> {movie.tomatoes.viewer.rating}/5
-                          {movie.tomatoes.viewer.meter ? ` (${movie.tomatoes.viewer.meter}%)` : ''}
+                          <strong className="text-nebula-teal">Audiência:</strong> <span className="text-light">{movie.tomatoes.viewer.rating}/5
+                          {movie.tomatoes.viewer.meter ? ` (${movie.tomatoes.viewer.meter}%)` : ''}</span>
                         </p>
                       )}
                       
@@ -195,12 +200,14 @@ const MovieDetail: React.FC = () => {
               )}
               
               {movie.metacritic && (
-                <div className="col-md-6">
-                  <div className="card mb-3">
-                    <div className="card-header bg-success text-white">Metacritic</div>
+                <div className="col-md-6 mb-3">
+                  <div className="card space-card h-100">
+                    <div className="card-header" style={{ background: '#66cc33', color: '#121212' }}>
+                      <i className="bi bi-graph-up me-2"></i>Metacritic
+                    </div>
                     <div className="card-body">
                       <p className="mb-0">
-                        <strong>Pontuação:</strong> {movie.metacritic}/100
+                        <strong className="text-nebula-teal">Pontuação:</strong> <span className="text-light">{movie.metacritic}/100</span>
                       </p>
                     </div>
                   </div>
@@ -209,130 +216,154 @@ const MovieDetail: React.FC = () => {
             </div>
           </div>
           
-          {/* Prêmios */}
           {movie.awards && (
-            <div className="mb-4">
-              <h3>Prêmios</h3>
-              <p>{movie.awards.text}</p>
+            <div className="card space-card mb-4">
+              <div className="card-header">
+                <h3 className="h5 mb-0 text-star"><i className="bi bi-trophy me-2"></i>Prémios</h3>
+              </div>
+              <div className="card-body">
+                <p className="text-light">{movie.awards.text}</p>
+              </div>
             </div>
           )}
           
-          {/* Sinopse */}
-          <h3>Sinopse</h3>
-          <p className="lead">{movie.fullplot || movie.plot}</p>
+          <div className="card space-card mb-4">
+            <div className="card-header">
+              <h3 className="h5 mb-0 text-star"><i className="bi bi-book me-2"></i>Sinopse</h3>
+            </div>
+            <div className="card-body">
+              <p className="lead text-light">{movie.fullplot || movie.plot}</p>
+            </div>
+          </div>
           
-          {/* Informações adicionais */}
-          <div className="row mt-4">
-            {movie.countries && movie.countries.length > 0 && (
-              <div className="col-md-6">
-                <p><strong>Países:</strong> {movie.countries.join(', ')}</p>
+          <div className="card space-card">
+            <div className="card-body">
+              <div className="row">
+                {movie.countries && movie.countries.length > 0 && (
+                  <div className="col-md-6">
+                    <p className='m-0'><strong className="text-nebula-teal">Países:</strong> <span className="text-light">{movie.countries.join(', ')}</span></p>
+                  </div>
+                )}
+                {movie.languages && movie.languages.length > 0 && (
+                  <div className="col-md-6">
+                    <p className='m-0'><strong className="text-nebula-teal">Idiomas:</strong> <span className="text-light">{movie.languages.join(', ')}</span></p>
+                  </div>
+                )}
               </div>
-            )}
-            {movie.languages && movie.languages.length > 0 && (
-              <div className="col-md-6">
-                <p><strong>Idiomas:</strong> {movie.languages.join(', ')}</p>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
 
       <div className="row mt-5">
         <div className="col-12">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h2 className="mb-0">Comentários ({comments.length})</h2>
-            <button 
-              className={`btn ${showCommentForm ? 'btn-secondary' : 'btn-primary'}`}
-              onClick={toggleCommentForm}
-            >
-              {showCommentForm ? 'Fechar formulário' : 'Adicionar comentário'}
-            </button>
-          </div>
-          
-          <div className={`card mb-4 ${showCommentForm ? '' : 'd-none'}`}>
-            <div className="card-header bg-light">
-              <h3 className="h5 mb-0">Adicionar um comentário</h3>
+          <div className="card space-card">
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <h2 className="h4 mb-0 text-star"><i className="bi bi-chat-dots me-2"></i>Comentários ({comments.length})</h2>
+              <button 
+                className={`btn ${showCommentForm ? 'btn-cosmic-outline' : 'btn-cosmic'}`}
+                onClick={toggleCommentForm}
+              >
+                {showCommentForm ? (<><i className="bi bi-x-circle me-2"></i>Fechar formulário</>) : (<><i className="bi bi-plus-circle me-2"></i>Adicionar comentário</>)}
+              </button>
             </div>
-            <div className="card-body">
-              <form onSubmit={handleSubmitComment}>
-                <div className="mb-3">
-                  <label htmlFor="name" className="form-label fw-bold text-start d-block">Nome</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="name"
-                    name="name"
-                    value={newComment.name}
-                    onChange={handleInputChange}
-                    required
-                  />
+          
+            <div className={`card-body ${showCommentForm ? '' : 'd-none'}`}>
+              <div className="card space-card mb-4">
+                <div className="card-header">
+                  <h3 className="h5 mb-0 text-nebula-teal">Adicionar um comentário</h3>
                 </div>
-                
-                <div className="mb-3">
-                  <label htmlFor="text" className="form-label fw-bold text-start d-block">Comentário</label>
-                  <textarea
-                    className="form-control"
-                    id="text"
-                    name="text"
-                    rows={3}
-                    value={newComment.text}
-                    onChange={handleInputChange}
-                    required
-                  ></textarea>
+                <div className="card-body">
+                  <form onSubmit={handleSubmitComment}>
+                    <div className="mb-3">
+                      <label htmlFor="name" className="form-label fw-bold text-start d-block text-star">Nome</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        id="name"
+                        name="name"
+                        value={newComment.name}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label htmlFor="text" className="form-label fw-bold text-start d-block text-star">Comentário</label>
+                      <textarea
+                        className="form-control"
+                        id="text"
+                        name="text"
+                        rows={3}
+                        value={newComment.text}
+                        onChange={handleInputChange}
+                        required
+                      ></textarea>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label htmlFor="rating" className="form-label fw-bold text-start d-block text-star">Avaliação</label>
+                      <select
+                        className="form-select"
+                        id="rating"
+                        name="rating"
+                        value={newComment.rating}
+                        onChange={handleInputChange}
+                      >
+                        <option value="1">1 - Mau</option>
+                        <option value="2">2 - Razoável</option>
+                        <option value="3">3 - Bom</option>
+                        <option value="4">4 - Muito Bom</option>
+                        <option value="5">5 - Excelente</option>
+                      </select>
+                    </div>
+                    
+                    <div className="d-flex justify-content-between">
+                      <button 
+                        type="button" 
+                        className="btn btn-cosmic-outline" 
+                        onClick={toggleCommentForm}
+                      >
+                        <i className="bi bi-x-circle me-2"></i>Cancelar
+                      </button>
+                      <button type="submit" className="btn btn-cosmic">
+                        <i className="bi bi-send me-2"></i>Enviar Comentário
+                      </button>
+                    </div>
+                  </form>
                 </div>
-                
-                <div className="mb-3">
-                  <label htmlFor="rating" className="form-label fw-bold text-start d-block">Avaliação</label>
-                  <select
-                    className="form-select"
-                    id="rating"
-                    name="rating"
-                    value={newComment.rating}
-                    onChange={handleInputChange}
-                  >
-                    <option value="1">1 - Mau</option>
-                    <option value="2">2 - Regular</option>
-                    <option value="3">3 - Bom</option>
-                    <option value="4">4 - Muito Bom</option>
-                    <option value="5">5 - Excelente</option>
-                  </select>
-                </div>
-                
-                <div className="d-flex justify-content-between">
-                  <button 
-                    type="button" 
-                    className="btn btn-outline-secondary" 
-                    onClick={toggleCommentForm}
-                  >
-                    Cancelar
-                  </button>
-                  <button type="submit" className="btn btn-primary">
-                    Enviar Comentário
-                  </button>
-                </div>
-              </form>
+              </div>
             </div>
           </div>
           
           {comments.length === 0 ? (
-            <div className="alert alert-info">Nenhum comentário ainda. Seja o primeiro a comentar!</div>
+            <div className="alert alert-cosmic mt-3">
+              <span style={{ color: 'var(--nebula-teal)', textShadow: '0 0 5px rgba(8, 217, 214, 0.5)' }}><i className="bi bi-chat-dots me-2"></i>Nenhum comentário ainda. Seja o primeiro a comentar!</span>
+            </div>
           ) : (
-            <div className="comment-list">
+            <div className="comment-list mt-3">
               {comments.map(comment => (
-                <div key={comment._id} className="card mb-3">
+                <div key={comment._id} className="card space-card mb-3">
                   <div className="card-body">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <div>
-                        <h5 className="card-title mb-0">{comment.name}</h5>
-                        <span className="text-dark">
-                          {new Date(comment.date).toLocaleDateString('pt-BR')}
-                        </span>
+                        <h5 className="card-title mb-0 text-nebula-teal">{comment.name}</h5>
                       </div>
-                      <div className="badge bg-primary">
+                      <div className="badge" style={{ 
+                        background: 'var(--nebula-gradient)', 
+                        color: 'white',
+                        padding: '8px 12px',
+                        borderRadius: '6px'
+                      }}>
                         {comment.rating ? comment.rating : '?'}/5 ⭐
                       </div>
                     </div>
-                    <p className="card-text">{comment.text}</p>
+                    <hr className="cosmic-divider" />
+                    <p className="card-text text-light">{comment.text}</p>
+                    <hr className="cosmic-divider" />
+                    <p className="text-light opacity-75 text-end m-0">
+                        {new Date(comment.date).toLocaleDateString('pt-PT')}
+                    </p>
                   </div>
                 </div>
               ))}

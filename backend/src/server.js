@@ -1,22 +1,29 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
+// Importar configurações
+const { connectDB, serverConfig } = require('./config');
+
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors(serverConfig.corsOptions));
 app.use(express.json());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('Failed to connect to MongoDB:', err));
+// Conectar ao MongoDB
+connectDB()
+  .then(() => {
+    console.log('Conexão com o banco de dados estabelecida');
+  })
+  .catch(err => {
+    console.error('Erro na inicialização do banco de dados:', err);
+    process.exit(1);
+  });
 
 // Rota de status para verificar conexão
 app.get('/api/status', (req, res) => {
+  const mongoose = require('mongoose');
   res.json({ 
     status: 'online', 
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
@@ -42,6 +49,6 @@ app.use(notFound);
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(serverConfig.port, () => {
+  console.log(`Servidor rodando na porta ${serverConfig.port}`);
 });

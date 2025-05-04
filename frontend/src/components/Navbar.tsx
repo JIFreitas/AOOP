@@ -8,7 +8,6 @@ const Navbar: React.FC = () => {
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Verificar autenticação quando o componente é montado
     const checkAuth = () => {
       const isAuth = isAuthenticated();
       setAuthenticated(isAuth);
@@ -21,7 +20,6 @@ const Navbar: React.FC = () => {
     
     checkAuth();
     
-    // Adicionar listener para verificar a autenticação quando o localStorage mudar
     const handleStorageChange = () => {
       checkAuth();
     };
@@ -41,9 +39,11 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav className="navbar navbar-dark bg-space navbar-expand-lg">
       <div className="container">
-        <Link className="navbar-brand" to="/">Movie Database</Link>
+        <Link className="navbar-brand cosmic" to="/">
+          MoviePlanet
+        </Link>
         <button 
           className="navbar-toggler" 
           type="button" 
@@ -55,9 +55,8 @@ const Navbar: React.FC = () => {
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav me-auto">
             <li className="nav-item">
-              <Link className="nav-link" to="/">Home</Link>
+              <Link className="nav-link" to="/">Home page</Link>
             </li>
-            {/* Mais links de navegação se necessário */}
           </ul>
           
           <ul className="navbar-nav">
@@ -72,21 +71,22 @@ const Navbar: React.FC = () => {
                     data-bs-toggle="dropdown" 
                     aria-expanded="false"
                   >
-                    {user?.name || 'Usuário'}
+                    <i className="bi bi-person-circle me-1"></i> {user?.name || 'Utilizador'}
                   </a>
-                  <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                  <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" 
+                      style={{ background: 'var(--space-deeper)', borderColor: 'var(--space-blue)' }}>
                     <li>
-                      <Link className="dropdown-item" to="/profile">
-                        Meu Perfil
+                      <Link className="dropdown-item text-light" to="/profile">
+                        <i className="bi bi-gear me-2"></i> O Meu Perfil
                       </Link>
                     </li>
-                    <li><hr className="dropdown-divider" /></li>
+                    <li><hr className="dropdown-divider" style={{ borderColor: 'var(--space-blue)' }} /></li>
                     <li>
                       <button 
                         className="dropdown-item text-danger" 
                         onClick={handleLogout}
                       >
-                        Sair
+                        <i className="bi bi-box-arrow-right me-2"></i> Sair
                       </button>
                     </li>
                   </ul>
@@ -95,10 +95,14 @@ const Navbar: React.FC = () => {
             ) : (
               <>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/login">Login</Link>
+                  <Link className="nav-link btn btn-cosmic-outline mx-1 px-3 py-1 mt-1" to="/login">
+                    <i className="bi bi-box-arrow-in-right me-1"></i> Iniciar sessão
+                  </Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/register">Registrar</Link>
+                  <Link className="nav-link btn btn-cosmic px-3 py-1 mx-1 mt-1" to="/register">
+                    <i className="bi bi-person-plus me-1"></i> Registar
+                  </Link>
                 </li>
               </>
             )}

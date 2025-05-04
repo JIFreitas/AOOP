@@ -1,4 +1,5 @@
 const Movie = require('../models/Movie');
+const mongoose = require('mongoose');
 
 // Get all movies with pagination and search
 exports.getMovies = async (req, res) => {
@@ -33,10 +34,7 @@ exports.getMovies = async (req, res) => {
     // Adicionar filtro adicional para filmes com avaliação se estiver ordenando por avaliação
     if (sort === 'rating_asc' || sort === 'rating_desc') {
       // Garantir que apenas filmes com avaliação do IMDB sejam incluídos
-      // Usa um filtro mais robusto para garantir que só apareçam filmes com avaliação válida
       query['imdb.rating'] = { $exists: true, $ne: null, $gt: 0 };
-      
-      // Garantir que o objeto imdb existe também
       query['imdb'] = { $exists: true, $ne: null };
     }
     
@@ -63,15 +61,21 @@ exports.getMovies = async (req, res) => {
         sortConfig = { title: 1 };
     }
 
-    // Usando o método aggregate para poder usar allowDiskUse
-    const movies = await Movie.aggregate([
-      { $match: query },
-      { $sort: sortConfig },
-      { $skip: skip },
-      { $limit: limit }
-    ]).option({ allowDiskUse: true });
-      
-    const total = await Movie.countDocuments(query);
+    // Usar a conexão nativa do MongoDB para ter mais controle
+    const db = mongoose.connection;
+    const collection = db.collection('movies');
+    
+    // Contagem total para paginação
+    const total = await collection.countDocuments(query);
+    
+    // IMPORTANTE: Reordenando o pipeline para colocar $match e $sort no início,
+    // antes de $skip e $limit, para melhor aproveitamento dos índices
+    const movies = await collection.aggregate([
+      { $match: query },  // Primeiro filtramos os documentos
+      { $sort: sortConfig }, // Em seguida, ordenamos (usando índices)
+      { $skip: skip },      // Depois pulamos os docs para paginação
+      { $limit: limit }     // Por fim, limitamos o número retornado
+    ], { "allowDiskUse": true }).toArray();
     
     res.json({
       movies,
@@ -80,6 +84,7 @@ exports.getMovies = async (req, res) => {
       total
     });
   } catch (err) {
+    console.error('Erro na busca de filmes:', err);
     res.status(500).json({ 
       message: 'Erro ao buscar filmes',
       error: err.message 

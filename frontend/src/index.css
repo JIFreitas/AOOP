@@ -1,13 +1,413 @@
+:root {
+  /* Paleta de cores espacial/cósmica */
+  --space-dark: #121212;
+  --space-deeper: #101128;
+  --space-content-bg: #2c2929;  /* Nova cor para o fundo do conteúdo principal */
+  --space-navy: #1a1b29;
+  --space-purple: #4b3f72;
+  --space-violet: #6f58c9;
+  --space-indigo: #3d348b;
+  --space-blue: #1e2761;
+  --space-light: #e4e4e4;
+  --space-accent: #7d53de;
+  --planet-orange: #ff8c42;
+  --planet-red: #e84855;
+  --star-yellow: #ffd166;
+  --nebula-pink: #c04cfd;
+  --nebula-teal: #08d9d6;
+  --comet-blue: #3185fc;
+
+  /* Gradientes */
+  --cosmic-gradient: linear-gradient(to right, var(--space-indigo), var(--space-blue), var(--space-purple));
+  --nebula-gradient: linear-gradient(to right, var(--nebula-pink), var(--nebula-teal));
+  --star-gradient: linear-gradient(45deg, var(--star-yellow), var(--planet-orange));
+}
+
+html, body, #root, .App {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--space-dark);
+  color: var(--space-light);
+  background-image: 
+    radial-gradient(circle at 25% 10%, rgba(124, 83, 220, 0.2) 0%, transparent 20%),
+    radial-gradient(circle at 80% 80%, rgba(66, 133, 244, 0.1) 0%, transparent 30%);
+  overflow-x: hidden;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Classes gerais para tema espacial */
+.navbar.navbar-dark.bg-space {
+  background: var(--space-deeper) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.navbar-brand.cosmic {
+  font-weight: 700;
+  font-size: 1.6rem;
+  background: var(--nebula-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  padding-right: 5px;
+}
+
+/* Melhoria dos botões para torná-los mais visíveis */
+.btn {
+  font-weight: 600;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Botão cosmic principal com tons roxos/rosa */
+.btn-cosmic {
+  background: var(--nebula-pink) !important;
+  border: 2px solid var(--nebula-pink) !important;
+  color: white !important;
+  transition: all 0.3s;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  opacity: 1 !important;
+}
+
+.btn-cosmic:hover, .btn-cosmic:focus {
+  background: var(--space-accent) !important;
+  border-color: var(--space-accent) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(192, 76, 253, 0.5), 0 0 15px rgba(192, 76, 253, 0.3);
+  color: white !important;
+  opacity: 1 !important;
+}
+
+/* Botão cosmic outline com borda mais visível */
+.btn-cosmic-outline {
+  background: rgba(61, 52, 139, 0.9) !important;
+  border: 2px solid var(--nebula-pink) !important;
+  color: var(--nebula-pink) !important;
+  box-shadow: 0 0 8px rgba(192, 76, 253, 0.3);
+  opacity: 1 !important;
+}
+
+.btn-cosmic-outline:hover, .btn-cosmic-outline:focus {
+  background: var(--space-violet) !important;
+  border-color: var(--nebula-pink) !important;
+  color: white !important;
+  box-shadow: 0 4px 8px rgba(192, 76, 253, 0.5), 0 0 15px rgba(192, 76, 253, 0.3);
+  transform: translateY(-2px);
+  opacity: 1 !important;
+}
+
+/* Botão planet com tons mais roxos */
+.btn-planet {
+  background: var(--space-accent) !important;
+  border: 2px solid var(--nebula-pink) !important;
+  color: white !important;
+  font-weight: 700;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  opacity: 1 !important;
+}
+
+.btn-planet:hover, .btn-planet:focus {
+  background: var(--nebula-pink) !important;
+  border-color: var(--space-accent) !important;
+  color: white !important;
+  box-shadow: 0 4px 8px rgba(125, 83, 222, 0.5), 0 0 15px rgba(125, 83, 222, 0.3);
+  transform: translateY(-2px);
+  opacity: 1 !important;
+}
+
+/* Botão star adaptado para tema roxo */
+.btn-star {
+  background: var(--space-violet);
+  border: 2px solid var(--space-accent);
+  color: white;
+  font-weight: 700;
+}
+
+.btn-star:hover, .btn-star:focus {
+  background: var(--space-indigo);
+  border-color: var(--nebula-pink);
+  color: white;
+  box-shadow: 0 4px 8px rgba(111, 88, 201, 0.5), 0 0 15px rgba(111, 88, 201, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Botão nebula com gradiente roxo */
+.btn-nebula {
+  background: linear-gradient(135deg, var(--nebula-pink), var(--space-accent));
+  border: none;
+  color: white;
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+}
+
+.btn-nebula:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--space-accent), var(--nebula-pink));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn-nebula:hover:before, .btn-nebula:focus:before {
+  opacity: 1;
+}
+
+.btn-nebula:hover, .btn-nebula:focus {
+  color: white;
+  box-shadow: 0 4px 12px rgba(192, 76, 253, 0.5), 0 0 20px rgba(125, 83, 222, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-dark-cosmic {
+  background: var(--space-purple);
+  border: 2px solid var(--space-violet);
+  color: var(--space-light);
+}
+
+.btn-dark-cosmic:hover, .btn-dark-cosmic:focus {
+  background: var(--space-violet);
+  border-color: var(--nebula-pink);
+  color: white;
+  box-shadow: 0 4px 8px rgba(111, 88, 201, 0.5), 0 0 10px rgba(111, 88, 201, 0.3);
+  transform: translateY(-2px);
+}
+
+.card.space-card {
+  background: var(--space-navy);
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s;
+  color: var(--space-light);
+  overflow: hidden;
+}
+
+.card.space-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.card.space-card .card-title {
+  color: var(--star-yellow);
+  font-weight: 600;
+}
+
+.card.space-card .card-header {
+  background: var(--space-blue);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card.space-card .card-footer {
+  background: rgba(26, 27, 41, 0.8);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.text-cosmic {
+  color: var(--nebula-pink);
+}
+
+.text-star {
+  color: var(--star-yellow);
+}
+
+.pagination .page-item.active .page-link {
+  background-color: var(--space-accent);
+  border-color: var(--space-accent);
+}
+
+.pagination .page-link {
+  color: var(--space-accent);
+  background: var(--space-deeper);
+  border-color: var(--space-navy);
+}
+
+.pagination .page-link:hover {
+  background-color: var(--space-indigo);
+  color: white;
+}
+
+.form-control, .form-select {
+  background-color: var(--space-deeper);
+  border-color: var(--space-navy);
+  color: var(--space-light);
+}
+
+.form-control:focus, .form-select:focus {
+  background-color: var(--space-deeper);
+  border-color: var(--space-accent);
+  box-shadow: 0 0 0 0.25rem rgba(125, 83, 222, 0.25);
+  color: white;
+}
+
+.form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23e4e4e4' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+}
+
+/* Estrelas de fundo */
+.stars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  overflow: hidden;
+}
+
+/* Título com estilo espacial */
+.cosmic-title {
+  font-weight: 700;
+  position: relative;
+  display: inline-block;
+  color: white;
+  text-shadow: 0 0 10px var(--nebula-pink), 0 0 20px var(--space-accent);
+}
+
+.cosmic-title::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--nebula-gradient);
+  border-radius: 3px;
+}
+
+/* Alertas personalizados */
+.alert-cosmic {
+  background: linear-gradient(135deg, rgba(61, 52, 139, 0.7), rgba(30, 39, 97, 0.7));
+  color: var(--nebula-teal);
+  border: 1px solid var(--nebula-pink);
+  box-shadow: 0 0 15px rgba(192, 76, 253, 0.3);
+  border-radius: 8px;
+  padding: 15px;
+  text-shadow: 0 0 5px rgba(8, 217, 214, 0.5);
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+.alert-cosmic::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  z-index: -1;
+  background: linear-gradient(45deg, transparent, rgba(192, 76, 253, 0.3), transparent);
+  animation: cosmic-glow 3s linear infinite;
+}
+
+@keyframes cosmic-glow {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.alert-planet {
+  background-color: rgba(255, 140, 66, 0.2);
+  color: var(--star-yellow);
+  border: 1px solid var(--planet-orange);
+  box-shadow: 0 0 15px rgba(255, 140, 66, 0.3);
+  border-radius: 8px;
+  padding: 15px;
+}
+
+/* Simplificação para as páginas de autenticação */
+.auth-layout {
+  min-height: calc(100vh - 56px); /* Altura total menos navbar */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+}
+
+.auth-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -1;
+}
+
+.auth-content {
+  width: 100%;
+  max-width: 500px;
+  padding: 20px;
+}
+
+/* Novos estilos para as páginas */
+.main-content {
+  background-color: var(--space-content-bg);
+  min-height: calc(100vh - 56px);
+  padding: 20px 0;
+}
+
+/* Estilos para as páginas de autenticação */
+.fullscreen-bg {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.fullscreen-bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -1;
+  filter: brightness(0.7);
+}
+
+.auth-container {
+  width: 100%;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Divider com efeito espacial simplificado */
+.cosmic-divider {
+  height: 1px;
+  border: none;
+  background: var(--nebula-pink);
+  margin: 15px 0;
+  box-shadow: 0 0 10px rgba(192, 76, 253, 0.8);
+  opacity: 0.8;
 }

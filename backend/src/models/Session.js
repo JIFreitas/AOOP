@@ -13,7 +13,7 @@ const sessionSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: '7d' // Expirar documento após 7 dias
+    expires: '1d'
   }
 });
 

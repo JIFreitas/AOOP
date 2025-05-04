@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 const Session = require('../models/Session');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'sua_chave_secreta_jwt';
+// Importar configurações de autenticação
+const { authConfig } = require('../config');
 
 exports.authenticate = async (req, res, next) => {
   try {
@@ -22,7 +23,7 @@ exports.authenticate = async (req, res, next) => {
       });
     }
     
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, authConfig.jwt.secret);
     
     req.userId = decoded.userId;
     req.token = token;

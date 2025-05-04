@@ -34,7 +34,7 @@ const Profile: React.FC = () => {
       try {
         const user = await getUserProfile();
         if (!user) {
-          throw new Error('Não foi possível carregar dados do usuário');
+          throw new Error('Não foi possível carregar dados do utilizador');
         }
 
         setFormData(prev => ({
@@ -63,7 +63,6 @@ const Profile: React.FC = () => {
 
   const handleToggleEditMode = () => {
     setEditMode(!editMode);
-    // Limpar campos de password ao entrar/sair do modo de edição
     setFormData(prev => ({
       ...prev,
       currentPassword: '',
@@ -79,31 +78,27 @@ const Profile: React.FC = () => {
     setError(null);
     setSuccess(null);
 
-    // Validar formulário
     if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
-      setError('As novas passwords não coincidem');
+      setError('As novas palavras-passe não coincidem');
       return;
     }
 
     if (formData.newPassword && formData.newPassword.length < 6) {
-      setError('A password deve ter pelo menos 6 caracteres');
+      setError('A palavra-passe deve ter pelo menos 6 caracteres');
       return;
     }
 
     setUpdating(true);
 
-    // Preparar dados para atualização
     const updateData: UpdateUserData = {
       name: formData.name
     };
 
-    // Incluir email se foi alterado
     const currentUser = getCurrentUser();
     if (currentUser && formData.email !== currentUser.email) {
       updateData.email = formData.email;
     }
 
-    // Incluir password se estiver sendo alterada
     if (formData.currentPassword && formData.newPassword) {
       updateData.currentPassword = formData.currentPassword;
       updateData.newPassword = formData.newPassword;
@@ -119,7 +114,7 @@ const Profile: React.FC = () => {
         setError(response.message || 'Erro ao atualizar perfil');
       }
     } catch (err) {
-      setError('Erro ao conectar ao servidor. Tente novamente mais tarde.');
+      setError('Erro ao ligar ao servidor. Tente novamente mais tarde.');
       console.error('Error updating profile:', err);
     } finally {
       setUpdating(false);
@@ -134,8 +129,8 @@ const Profile: React.FC = () => {
   if (loading) {
     return (
       <div className="text-center my-5">
-        <div className="spinner-border" role="status">
-          <span className="visually-hidden">Carregando...</span>
+        <div className="spinner-border text-cosmic" role="status" style={{ width: "3rem", height: "3rem" }}>
+          <span className="visually-hidden">A carregar...</span>
         </div>
       </div>
     );
@@ -144,46 +139,58 @@ const Profile: React.FC = () => {
   return (
     <div className="row justify-content-center">
       <div className="col-md-8 col-lg-6">
-        <div className="card shadow">
+        <div className="card space-card shadow">
           <div className="card-body p-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
-              <h2 className="mb-0">{editMode ? 'Editar Perfil' : 'Meu Perfil'}</h2>
+              <h2 className="mb-0 cosmic-title">{editMode ? 'Editar Perfil' : 'Meu Perfil'}</h2>
               <div>
                 {!editMode ? (
                   <button 
-                    className="btn btn-primary me-2" 
+                    className="btn btn-cosmic me-2" 
                     onClick={handleToggleEditMode}
                   >
+                    <i className="bi bi-pencil-square me-2"></i>
                     Editar
                   </button>
                 ) : (
                   <button 
-                    className="btn btn-secondary me-2" 
+                    className="btn btn-cosmic-outline me-2" 
                     onClick={handleToggleEditMode}
                   >
+                    <i className="bi bi-x-circle me-2"></i>
                     Cancelar
                   </button>
                 )}
                 <button 
-                  className="btn btn-outline-danger" 
+                  className="btn btn-planet" 
                   onClick={handleLogout}
                 >
+                  <i className="bi bi-box-arrow-right me-2"></i>
                   Sair
                 </button>
               </div>
             </div>
             
             {error && (
-              <div className="alert alert-danger">{error}</div>
+              <div className="alert alert-planet">
+                <i className="bi bi-exclamation-triangle me-2"></i>
+                {error}
+              </div>
             )}
             
             {success && (
-              <div className="alert alert-success">{success}</div>
+              <div className="alert alert-cosmic">
+                <i className="bi bi-check-circle me-2"></i>
+                {success}
+              </div>
             )}
             
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
-                <label htmlFor="name" className="form-label fw-bold">Nome</label>
+                <label htmlFor="name" className="form-label fw-bold">
+                  <i className="bi bi-person-fill me-2 text-cosmic"></i>
+                  Nome
+                </label>
                 <input
                   type="text"
                   className="form-control"
@@ -197,7 +204,10 @@ const Profile: React.FC = () => {
               </div>
               
               <div className="mb-4">
-                <label htmlFor="email" className="form-label fw-bold">Email</label>
+                <label htmlFor="email" className="form-label fw-bold">
+                  <i className="bi bi-envelope-fill me-2 text-cosmic"></i>
+                  Email
+                </label>
                 <input
                   type="email"
                   className="form-control"
@@ -212,11 +222,14 @@ const Profile: React.FC = () => {
               
               {editMode && (
                 <>
-                  <hr className="my-4" />
-                  <h5 className="mb-3">Alterar Password (opcional)</h5>
+                  <hr className="my-4" style={{ borderColor: 'var(--space-purple)' }} />
+                  <h5 className="mb-3 text-cosmic">
+                    <i className="bi bi-key me-2"></i>
+                    Alterar Palavra-passe (opcional)
+                  </h5>
                   
                   <div className="mb-3">
-                    <label htmlFor="currentPassword" className="form-label fw-bold">Password Atual</label>
+                    <label htmlFor="currentPassword" className="form-label fw-bold">Palavra-passe Atual</label>
                     <input
                       type="password"
                       className="form-control"
@@ -228,7 +241,7 @@ const Profile: React.FC = () => {
                   </div>
                   
                   <div className="mb-3">
-                    <label htmlFor="newPassword" className="form-label fw-bold">Nova Password</label>
+                    <label htmlFor="newPassword" className="form-label fw-bold">Nova Palavra-passe</label>
                     <input
                       type="password"
                       className="form-control"
@@ -238,11 +251,11 @@ const Profile: React.FC = () => {
                       onChange={handleChange}
                       minLength={6}
                     />
-                    <small className="text-muted">A password deve ter pelo menos 6 caracteres</small>
+                    <small className="text-muted">A palavra-passe deve ter pelo menos 6 caracteres</small>
                   </div>
                   
                   <div className="mb-4">
-                    <label htmlFor="confirmPassword" className="form-label fw-bold">Confirmar Nova Password</label>
+                    <label htmlFor="confirmPassword" className="form-label fw-bold">Confirmar Nova Palavra-passe</label>
                     <input
                       type="password"
                       className="form-control"
@@ -256,15 +269,20 @@ const Profile: React.FC = () => {
                   <div className="d-grid">
                     <button 
                       type="submit" 
-                      className="btn btn-primary"
+                      className="btn btn-cosmic"
                       disabled={updating}
                     >
                       {updating ? (
                         <>
                           <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          A salvar...
+                          A guardar...
                         </>
-                      ) : 'Salvar Alterações'}
+                      ) : (
+                        <>
+                          <i className="bi bi-save me-2"></i>
+                          Guardar Alterações
+                        </>
+                      )}
                     </button>
                   </div>
                 </>

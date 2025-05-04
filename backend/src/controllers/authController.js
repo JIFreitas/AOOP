@@ -3,7 +3,8 @@ const Session = require('../models/Session');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'sua_chave_secreta_jwt';
+// Importar configurações de autenticação
+const { authConfig } = require('../config');
 
 exports.register = async (req, res) => {
   try {
@@ -27,8 +28,8 @@ exports.register = async (req, res) => {
     
     const token = jwt.sign(
       { userId: user._id },
-      JWT_SECRET,
-      { expiresIn: '7d' }
+      authConfig.jwt.secret,
+      { expiresIn: authConfig.jwt.expiresIn }
     );
     
     const session = new Session({
@@ -81,8 +82,8 @@ exports.login = async (req, res) => {
     
     const token = jwt.sign(
       { userId: user._id },
-      JWT_SECRET,
-      { expiresIn: '7d' }
+      authConfig.jwt.secret,
+      { expiresIn: authConfig.jwt.expiresIn }
     );
     
     const session = new Session({
