@@ -51,6 +51,14 @@ export interface MovieFilterParams {
   sort?: SortOption;
 }
 
+export interface MovieListStatus {
+  favorite: boolean;
+  watched: boolean;
+  watchlist: boolean;
+}
+
+export type ListType = 'favorite' | 'watched' | 'watchlist';
+
 export const fetchMovies = async (params: MovieFilterParams = {}): Promise<PaginatedResponse<Movie>> => {
   const { page = 1, limit = 20, search = '', genre = '', sort = SortOption.TITLE_ASC } = params;
   try {
@@ -132,5 +140,50 @@ export const deleteComment = async (commentId: string): Promise<boolean> => {
   } catch (error) {
     const apiError = handleApiError(error);
     throw apiError;
+  }
+};
+
+// Novas funções para gerenciar listas de filmes
+
+export const addMovieToList = async (movieId: string, listType: ListType): Promise<boolean> => {
+  try {
+    const response = await axios.post(`${API_URL}/movies/list`, {
+      movie_id: movieId,
+      list_type: listType
+    });
+    return response.data.success;
+  } catch (error) {
+    const apiError = handleApiError(error);
+    throw apiError;
+  }
+};
+
+export const removeMovieFromList = async (movieId: string, listType: ListType): Promise<boolean> => {
+  try {
+    const response = await axios.delete(`${API_URL}/movies/list/${movieId}/${listType}`);
+    return response.data.success;
+  } catch (error) {
+    const apiError = handleApiError(error);
+    throw apiError;
+  }
+};
+
+export const checkMovieInLists = async (movieId: string): Promise<MovieListStatus | null> => {
+  try {
+    const response = await axios.get(`${API_URL}/movies/check-lists/${movieId}`);
+    return response.data.success ? response.data.data : null;
+  } catch (error) {
+    handleAndNotifyError(error);
+    return null;
+  }
+};
+
+export const getMoviesFromList = async (listType: ListType): Promise<Movie[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/movies/list/${listType}`);
+    return response.data.success ? response.data.data.map((item: any) => item.movie) : [];
+  } catch (error) {
+    handleAndNotifyError(error);
+    return [];
   }
 };

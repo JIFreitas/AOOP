@@ -7,7 +7,12 @@ import {
   updateComment,
   deleteComment,
   Comment,
-  UpdateComment 
+  UpdateComment,
+  addMovieToList,
+  removeMovieFromList,
+  checkMovieInLists,
+  MovieListStatus,
+  ListType
 } from '../services/api';
 import { Movie } from '../types/MovieTypes';
 import { isAuthenticated, getCurrentUser } from '../services/authService';
@@ -45,6 +50,18 @@ const MovieDetail: React.FC = () => {
   const isUserAuthenticated = isAuthenticated();
   const currentUser = getCurrentUser();
 
+  // Estados para listas de filmes
+  const [movieLists, setMovieLists] = useState<MovieListStatus>({
+    favorite: false,
+    watched: false,
+    watchlist: false
+  });
+  const [listLoading, setListLoading] = useState<Record<ListType, boolean>>({
+    favorite: false,
+    watched: false,
+    watchlist: false
+  });
+
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return;
@@ -69,6 +86,14 @@ const MovieDetail: React.FC = () => {
           );
           setUserHasCommented(!!userComment);
           setUserComment(userComment || null);
+        }
+
+        // Verificar em quais listas do usuário este filme está
+        if (isUserAuthenticated) {
+          const listsStatus = await checkMovieInLists(id);
+          if (listsStatus) {
+            setMovieLists(listsStatus);
+          }
         }
         
         setError(null);
@@ -194,6 +219,44 @@ const MovieDetail: React.FC = () => {
       console.error('Error deleting comment:', err);
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  // Função para alternar o status de um filme em uma lista
+  const toggleMovieList = async (listType: ListType) => {
+    if (!isUserAuthenticated || !id) {
+      return;
+    }
+    
+    setListLoading(prev => ({ ...prev, [listType]: true }));
+    
+    try {
+      const isInList = movieLists[listType];
+      
+      if (isInList) {
+        // Remover da lista
+        await removeMovieFromList(id, listType);
+        setMovieLists(prev => ({ ...prev, [listType]: false }));
+      } else {
+        // Adicionar à lista
+        await addMovieToList(id, listType);
+        
+        // Se a lista for assistido/quero assistir, precisamos atualizar o estado contrário
+        if (listType === 'watched' || listType === 'watchlist') {
+          const oppositeType: ListType = listType === 'watched' ? 'watchlist' : 'watched';
+          setMovieLists(prev => ({ 
+            ...prev, 
+            [listType]: true,
+            [oppositeType]: false
+          }));
+        } else {
+          setMovieLists(prev => ({ ...prev, [listType]: true }));
+        }
+      }
+    } catch (err) {
+      console.error(`Erro ao atualizar lista ${listType}:`, err);
+    } finally {
+      setListLoading(prev => ({ ...prev, [listType]: false }));
     }
   };
 
@@ -354,6 +417,58 @@ const MovieDetail: React.FC = () => {
                     <p className='m-0'><strong className="text-nebula-teal">Idiomas:</strong> <span className="text-light">{movie.languages.join(', ')}</span></p>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+
+          <div className="card space-card mt-4">
+            <div className="card-header">
+              <h3 className="h5 mb-0 text-star"><i className="bi bi-list-check me-2"></i>Minhas Listas</h3>
+            </div>
+            <div className="card-body">
+              <div className="d-flex justify-content-around">
+                <button 
+                  className={`btn ${movieLists.favorite ? 'btn-cosmic' : 'btn-cosmic-outline'}`} 
+                  onClick={() => toggleMovieList('favorite')}
+                  disabled={listLoading.favorite}
+                >
+                  {listLoading.favorite ? (
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  ) : (
+                    <>
+                      <i className={`bi ${movieLists.favorite ? 'bi-heart-fill' : 'bi-heart'} me-2`}></i>
+                      {movieLists.favorite ? 'Favorito' : 'Adicionar aos Favoritos'}
+                    </>
+                  )}
+                </button>
+                <button 
+                  className={`btn ${movieLists.watched ? 'btn-cosmic' : 'btn-cosmic-outline'}`} 
+                  onClick={() => toggleMovieList('watched')}
+                  disabled={listLoading.watched}
+                >
+                  {listLoading.watched ? (
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  ) : (
+                    <>
+                      <i className={`bi ${movieLists.watched ? 'bi-eye-fill' : 'bi-eye'} me-2`}></i>
+                      {movieLists.watched ? 'Assistido' : 'Marcar como Assistido'}
+                    </>
+                  )}
+                </button>
+                <button 
+                  className={`btn ${movieLists.watchlist ? 'btn-cosmic' : 'btn-cosmic-outline'}`} 
+                  onClick={() => toggleMovieList('watchlist')}
+                  disabled={listLoading.watchlist}
+                >
+                  {listLoading.watchlist ? (
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  ) : (
+                    <>
+                      <i className={`bi ${movieLists.watchlist ? 'bi-bookmark-fill' : 'bi-bookmark'} me-2`}></i>
+                      {movieLists.watchlist ? 'Na Lista de Assistir' : 'Adicionar à Lista de Assistir'}
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

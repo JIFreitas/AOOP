@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const movieController = require('../controllers/movieController');
+const userMovieListController = require('../controllers/userMovieListController');
+const { authenticate } = require('../middleware/authMiddleware');
 
+// Rotas públicas
 // Get all movies with pagination and optional search
 router.get('/', movieController.getMovies);
 
@@ -10,5 +13,18 @@ router.get('/genres', movieController.getGenres);
 
 // Get a single movie by ID
 router.get('/:id', movieController.getMovieById);
+
+// Rotas protegidas (requerem autenticação)
+// Adicionar um filme a uma lista do usuário (favoritos, assistidos, quero assistir)
+router.post('/list', authenticate, userMovieListController.addMovieToList);
+
+// Remover um filme de uma lista do usuário
+router.delete('/list/:movie_id/:list_type', authenticate, userMovieListController.removeMovieFromList);
+
+// Verificar em quais listas do usuário um filme está
+router.get('/check-lists/:movie_id', authenticate, userMovieListController.checkMovieInLists);
+
+// Obter todos os filmes de uma lista específica do usuário
+router.get('/list/:list_type', authenticate, userMovieListController.getMoviesFromList);
 
 module.exports = router;
