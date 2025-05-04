@@ -33,6 +33,8 @@ const Login: React.FC = () => {
       });
 
       if (response.success) {
+        // Disparar evento para informar outras partes do app que o usuário está logado
+        window.dispatchEvent(new Event('auth-change'));
         navigate('/profile');
       } else {
         setError(response.message || 'Erro ao iniciar sessão. Verifique as suas credenciais.');

@@ -22,6 +22,11 @@ export interface NewComment {
   rating?: number;
 }
 
+export interface UpdateComment {
+  text: string;
+  rating?: number;
+}
+
 export interface PaginatedResponse<T> {
   movies: T[];
   totalPages: number;
@@ -104,6 +109,26 @@ export const addComment = async (comment: NewComment): Promise<Comment | null> =
   try {
     const response = await axios.post(`${API_URL}/comments`, comment);
     return response.data;
+  } catch (error) {
+    const apiError = handleApiError(error);
+    throw apiError;
+  }
+};
+
+export const updateComment = async (commentId: string, data: UpdateComment): Promise<Comment | null> => {
+  try {
+    const response = await axios.put(`${API_URL}/comments/${commentId}`, data);
+    return response.data;
+  } catch (error) {
+    const apiError = handleApiError(error);
+    throw apiError;
+  }
+};
+
+export const deleteComment = async (commentId: string): Promise<boolean> => {
+  try {
+    await axios.delete(`${API_URL}/comments/${commentId}`);
+    return true;
   } catch (error) {
     const apiError = handleApiError(error);
     throw apiError;

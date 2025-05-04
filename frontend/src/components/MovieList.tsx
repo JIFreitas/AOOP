@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchMovies, fetchGenres, PaginatedResponse, SortOption, MovieFilterParams } from '../services/api';
+import { fetchMovies, fetchGenres, fetchCommentsByMovieId, addComment, PaginatedResponse, SortOption, MovieFilterParams } from '../services/api';
 import { Movie } from '../types/MovieTypes';
+import { isAuthenticated, getCurrentUser } from '../services/authService';
 
 const MovieList: React.FC = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -21,6 +22,19 @@ const MovieList: React.FC = () => {
     genre: '',
     sort: SortOption.TITLE_ASC
   });
+  
+  // Estados para gerenciar os comentários e o modal
+  const [showCommentModal, setShowCommentModal] = useState<boolean>(false);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [commentText, setCommentText] = useState<string>('');
+  const [rating, setRating] = useState<number>(5);
+  const [commentLoading, setCommentLoading] = useState<boolean>(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [userComments, setUserComments] = useState<{[movieId: string]: boolean}>({});
+  
+  // Verificar se o usuário está autenticado
+  const isUserAuthenticated = isAuthenticated();
+  const currentUser = getCurrentUser();
   
   useEffect(() => {
     const loadGenres = async () => {
@@ -154,6 +168,87 @@ const MovieList: React.FC = () => {
       sortOption !== SortOption.TITLE_ASC
     );
   };
+  
+  // Função para abrir o modal de comentários
+  const handleOpenCommentModal = async (movie: Movie) => {
+    if (!isUserAuthenticated) {
+      alert('Você precisa estar logado para comentar.');
+      return;
+    }
+    
+    setSelectedMovie(movie);
+    setCommentText('');
+    setRating(5);
+    setCommentError(null);
+    
+    try {
+      // Verificar se o usuário já comentou este filme
+      const comments = await fetchCommentsByMovieId(movie._id);
+      const hasCommented = comments.some(comment => 
+        currentUser && comment.name === currentUser.name && comment.email === currentUser.email
+      );
+      
+      if (hasCommented) {
+        setCommentError('Você já comentou este filme!');
+      }
+      
+      setShowCommentModal(true);
+      
+    } catch (err) {
+      console.error('Erro ao verificar comentários:', err);
+      setCommentError('Erro ao verificar comentários existentes.');
+      setShowCommentModal(true);
+    }
+  };
+  
+  // Função para fechar o modal de comentários
+  const handleCloseCommentModal = () => {
+    setShowCommentModal(false);
+    setSelectedMovie(null);
+    setCommentText('');
+    setRating(5);
+    setCommentError(null);
+  };
+  
+  // Função para enviar o comentário
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedMovie || !commentText.trim() || !currentUser) {
+      setCommentError('Por favor, preencha o comentário.');
+      return;
+    }
+    
+    setCommentLoading(true);
+    setCommentError(null);
+    
+    try {
+      const commentData = {
+        movie_id: selectedMovie._id,
+        name: currentUser.name,
+        email: currentUser.email,
+        text: commentText.trim(),
+        rating: rating
+      };
+      
+      await addComment(commentData);
+      
+      // Adicionar este filme à lista de comentados pelo usuário
+      setUserComments(prev => ({
+        ...prev,
+        [selectedMovie._id]: true
+      }));
+      
+      handleCloseCommentModal();
+      alert('Comentário adicionado com sucesso!');
+      
+    } catch (err: any) {
+      console.error('Erro ao adicionar comentário:', err);
+      setCommentError(err.message || 'Erro ao adicionar comentário.');
+    } finally {
+      setCommentLoading(false);
+    }
+  };
 
   if (loading && currentPage === 1 && !movies.length) {
     return <div className="text-center mt-5"><div className="spinner-border" role="status"></div></div>;
@@ -165,7 +260,7 @@ const MovieList: React.FC = () => {
 
   return (
     <div>
-      <h1 className="mb-4 cosmic-title">MoviePlanet - O teu planeta pessoal de cinema.</h1>
+      <h1 className="mb-4 cosmic-title">MoviePlanet - O teu planeta de cinema!</h1>
       
       <div className="card space-card mb-4">
         <div className="card-body">
@@ -291,9 +386,21 @@ const MovieList: React.FC = () => {
                       <><br /><strong className="text-star">Avaliação:</strong> {movie.imdb.rating}/10 <i className="bi bi-star-fill text-warning"></i></>
                     )}
                   </p>
-                  <Link to={`/movie/${movie._id}`} className="btn btn-cosmic">
-                    <i className="bi bi-telescope-fill me-2"></i>Ver Detalhes
-                  </Link>
+                  <div className="d-flex justify-content-between">
+                    <Link to={`/movie/${movie._id}`} className="btn btn-cosmic">
+                      <i className="bi bi-telescope-fill me-2"></i>Ver Detalhes
+                    </Link>
+                    {isUserAuthenticated && (
+                      <button 
+                        className="btn btn-cosmic-outline" 
+                        onClick={() => handleOpenCommentModal(movie)}
+                        disabled={userComments[movie._id]}
+                        title={userComments[movie._id] ? "Já comentou este filme" : "Adicionar comentário"}
+                      >
+                        <i className="bi bi-chat-dots-fill"></i>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -388,6 +495,98 @@ const MovieList: React.FC = () => {
             </li>
           </ul>
         </nav>
+      )}
+      
+      {/* Modal de Comentários usando HTML puro com classes Bootstrap */}
+      {showCommentModal && (
+        <div className="modal fade show" tabIndex={-1} role="dialog" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content" style={{ background: 'var(--space-navy)', border: '1px solid var(--nebula-pink)', borderRadius: '10px' }}>
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--space-purple)' }}>
+                <h5 className="modal-title" style={{ color: 'var(--nebula-pink)' }}>
+                  <i className="bi bi-chat-dots me-2"></i>
+                  {selectedMovie ? `Comentar: ${selectedMovie.title}` : 'Adicionar Comentário'}
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={handleCloseCommentModal} aria-label="Fechar"></button>
+              </div>
+              <div className="modal-body">
+                {commentError && (
+                  <div className="alert alert-planet mb-4" style={{ backgroundColor: 'rgba(255, 140, 66, 0.2)', color: 'var(--star-yellow)', border: '1px solid var(--planet-orange)' }}>
+                    <i className="bi bi-exclamation-triangle me-2"></i>
+                    {commentError}
+                  </div>
+                )}
+                
+                {!commentError && (
+                  <form onSubmit={handleSubmitComment}>
+                    <div className="mb-3">
+                      <label htmlFor="commentText" className="form-label fw-bold text-start d-block text-star">Seu Comentário</label>
+                      <textarea
+                        className="form-control"
+                        id="commentText"
+                        rows={4}
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        disabled={commentLoading}
+                        required
+                        placeholder="Escreva sua opinião sobre o filme..."
+                      ></textarea>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label htmlFor="rating" className="form-label fw-bold text-start d-block text-star">Avaliação</label>
+                      <select
+                        className="form-select"
+                        id="rating"
+                        value={rating}
+                        onChange={(e) => setRating(parseInt(e.target.value))}
+                        disabled={commentLoading}
+                      >
+                        <option value="1">1 - Mau</option>
+                        <option value="2">2 - Razoável</option>
+                        <option value="3">3 - Bom</option>
+                        <option value="4">4 - Muito Bom</option>
+                        <option value="5">5 - Excelente</option>
+                      </select>
+                    </div>
+                    
+                    <div className="d-flex justify-content-between">
+                      <button 
+                        type="button" 
+                        className="btn btn-cosmic-outline" 
+                        onClick={handleCloseCommentModal}
+                        disabled={commentLoading}
+                      >
+                        <i className="bi bi-x-circle me-2"></i>Cancelar
+                      </button>
+                      <button 
+                        type="submit" 
+                        className="btn btn-cosmic"
+                        disabled={commentLoading || !!commentError}
+                      >
+                        {commentLoading ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            A enviar...
+                          </>
+                        ) : (
+                          <>
+                            <i className="bi bi-send me-2"></i>Enviar Comentário
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Backdrop para cliques fora do modal */}
+      {showCommentModal && (
+        <div className="modal-backdrop fade show" onClick={handleCloseCommentModal}></div>
       )}
     </div>
   );

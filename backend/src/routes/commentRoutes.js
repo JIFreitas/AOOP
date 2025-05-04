@@ -8,6 +8,9 @@ router.get('/movie/:movieId', commentController.getMovieComments);
 // Add a new comment
 router.post('/', commentController.addComment);
 
+// Update a comment
+router.put('/:id', commentController.updateComment);
+
 // Delete a comment
 router.delete('/:id', commentController.deleteComment);
 

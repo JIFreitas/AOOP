@@ -49,6 +49,40 @@ exports.addComment = async (req, res) => {
   }
 };
 
+exports.updateComment = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'ID de comentário inválido' });
+    }
+    
+    const { text, rating } = req.body;
+    
+    if (!text) {
+      return res.status(400).json({ message: 'O texto do comentário é obrigatório' });
+    }
+    
+    const comment = await Comment.findById(req.params.id);
+    
+    if (!comment) {
+      return res.status(404).json({ message: 'Comentário não encontrado' });
+    }
+    
+    // Atualizar os campos do comentário
+    comment.text = text;
+    if (rating !== undefined) {
+      comment.rating = rating;
+    }
+    
+    const updatedComment = await comment.save();
+    res.json(updatedComment);
+  } catch (err) {
+    res.status(500).json({ 
+      message: 'Erro ao atualizar comentário',
+      error: err.message 
+    });
+  }
+};
+
 exports.deleteComment = async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {

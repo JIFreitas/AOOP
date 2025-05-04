@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isAuthenticated, getCurrentUser, logout, User } from '../services/authService';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
+    // Verificar autenticação sempre que o componente montar ou a rota mudar
     const checkAuth = () => {
       const isAuth = isAuthenticated();
       setAuthenticated(isAuth);
@@ -15,26 +17,38 @@ const Navbar: React.FC = () => {
       if (isAuth) {
         const currentUser = getCurrentUser();
         setUser(currentUser);
+      } else {
+        setUser(null);
       }
     };
     
     checkAuth();
     
-    const handleStorageChange = () => {
-      checkAuth();
+    // Adicionar evento para verificar mudanças no localStorage
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token' || e.key === 'user' || e.key === null) {
+        checkAuth();
+      }
     };
     
     window.addEventListener('storage', handleStorageChange);
     
+    // Evento personalizado para atualizações de autenticação na mesma janela
+    const handleCustomEvent = () => checkAuth();
+    window.addEventListener('auth-change', handleCustomEvent);
+    
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth-change', handleCustomEvent);
     };
-  }, []);
+  }, [location.pathname]); // Verificar também quando a rota mudar
   
   const handleLogout = async () => {
     await logout();
     setAuthenticated(false);
     setUser(null);
+    // Disparar evento para informar outras partes do app sobre a mudança de autenticação
+    window.dispatchEvent(new Event('auth-change'));
     navigate('/login');
   };
 

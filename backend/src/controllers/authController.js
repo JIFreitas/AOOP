@@ -26,6 +26,10 @@ exports.register = async (req, res) => {
     
     await user.save();
     
+    // Remover qualquer sessão existente que possa ter sido criada para este usuário
+    // (embora seja improvável neste ponto, é uma medida preventiva)
+    await Session.deleteMany({ user_id: user._id });
+    
     const token = jwt.sign(
       { userId: user._id },
       authConfig.jwt.secret,
@@ -79,6 +83,9 @@ exports.login = async (req, res) => {
         message: 'E-mail ou palavra-passe incorretos'
       });
     }
+    
+    // Remover sessões antigas do usuário antes de criar uma nova
+    await Session.deleteMany({ user_id: user._id });
     
     const token = jwt.sign(
       { userId: user._id },

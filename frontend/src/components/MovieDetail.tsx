@@ -4,9 +4,13 @@ import {
   fetchMovieById, 
   fetchCommentsByMovieId, 
   addComment,
-  Comment 
+  updateComment,
+  deleteComment,
+  Comment,
+  UpdateComment 
 } from '../services/api';
 import { Movie } from '../types/MovieTypes';
+import { isAuthenticated, getCurrentUser } from '../services/authService';
 
 const MovieDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -14,14 +18,32 @@ const MovieDetail: React.FC = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [commentFormError, setCommentFormError] = useState<string | null>(null);
+  const [commentLoading, setCommentLoading] = useState<boolean>(false);
   
   const [newComment, setNewComment] = useState({
-    name: '',
     text: '',
     rating: 5
   });
 
+  // Estados para edição de comentário
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState<string>('');
+  const [editCommentRating, setEditCommentRating] = useState<number>(5);
+  const [editCommentError, setEditCommentError] = useState<string | null>(null);
+  const [editCommentLoading, setEditCommentLoading] = useState<boolean>(false);
+  
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [commentToDelete, setCommentToDelete] = useState<Comment | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
+
   const [showCommentForm, setShowCommentForm] = useState<boolean>(false);
+  const [userHasCommented, setUserHasCommented] = useState<boolean>(false);
+  const [userComment, setUserComment] = useState<Comment | null>(null);
+  
+  // Verificar se o usuário está autenticado
+  const isUserAuthenticated = isAuthenticated();
+  const currentUser = getCurrentUser();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,6 +62,15 @@ const MovieDetail: React.FC = () => {
         const commentsData = await fetchCommentsByMovieId(id);
         setComments(commentsData);
         
+        // Verificar se o usuário atual já comentou este filme
+        if (isUserAuthenticated && currentUser) {
+          const userComment = commentsData.find(comment => 
+            comment.name === currentUser.name && comment.email === currentUser.email
+          );
+          setUserHasCommented(!!userComment);
+          setUserComment(userComment || null);
+        }
+        
         setError(null);
       } catch (err) {
         setError('Erro ao carregar os dados do filme');
@@ -50,6 +81,8 @@ const MovieDetail: React.FC = () => {
     };
 
     fetchData();
+    // Removemos isUserAuthenticated e currentUser das dependências
+    // porque eles são constantes que não mudam durante o ciclo de vida do componente
   }, [id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -63,15 +96,21 @@ const MovieDetail: React.FC = () => {
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!id || !newComment.name || !newComment.text) {
-      alert('Por favor, preencha todos os campos');
+    if (!id || !newComment.text) {
+      setCommentFormError('Por favor, preencha todos os campos');
+      return;
+    }
+
+    if (!isUserAuthenticated) {
+      setCommentFormError('Você precisa estar logado para comentar');
       return;
     }
 
     try {
+      setCommentLoading(true);
       const commentData = {
         movie_id: id,
-        name: newComment.name,
+        name: currentUser?.name || 'Anônimo',
         text: newComment.text,
         rating: newComment.rating
       };
@@ -80,16 +119,82 @@ const MovieDetail: React.FC = () => {
       
       if (addedComment) {
         setComments(prev => [addedComment, ...prev]);
-        setNewComment({ name: '', text: '', rating: 5 });
+        setNewComment({ text: '', rating: 5 });
+        setUserHasCommented(true);
+        setShowCommentForm(false);
       }
     } catch (err) {
       console.error('Error adding comment:', err);
-      alert('Erro ao adicionar comentário');
+      setCommentFormError('Erro ao adicionar comentário');
+    } finally {
+      setCommentLoading(false);
     }
   };
 
   const toggleCommentForm = () => {
     setShowCommentForm(!showCommentForm);
+  };
+
+  const handleEditComment = (comment: Comment) => {
+    setEditingCommentId(comment._id);
+    setEditCommentText(comment.text);
+    //TODO: Verificar se o rating é um número válido antes de definir o estado
+    setEditCommentRating(comment.rating ?? 5);
+  };
+
+  const handleUpdateComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingCommentId || !editCommentText) {
+      setEditCommentError('Por favor, preencha todos os campos');
+      return;
+    }
+
+    try {
+      setEditCommentLoading(true);
+      const updatedComment: UpdateComment = {
+        text: editCommentText,
+        rating: editCommentRating
+      };
+
+      const result = await updateComment(editingCommentId, updatedComment);
+
+      if (result) {
+        setComments(prev => prev.map(comment => comment._id === editingCommentId ? result : comment));
+        setEditingCommentId(null);
+        setEditCommentText('');
+        setEditCommentRating(5);
+      }
+    } catch (err) {
+      console.error('Error updating comment:', err);
+      setEditCommentError('Erro ao atualizar comentário');
+    } finally {
+      setEditCommentLoading(false);
+    }
+  };
+
+  const handleDeleteComment = (comment: Comment) => {
+    setCommentToDelete(comment);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!commentToDelete) return;
+
+    try {
+      setDeleteLoading(true);
+      const result = await deleteComment(commentToDelete._id);
+
+      if (result) {
+        setComments(prev => prev.filter(comment => comment._id !== commentToDelete._id));
+        setShowDeleteModal(false);
+        setCommentToDelete(null);
+      }
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   if (loading) {
@@ -260,12 +365,26 @@ const MovieDetail: React.FC = () => {
           <div className="card space-card">
             <div className="card-header d-flex justify-content-between align-items-center">
               <h2 className="h4 mb-0 text-star"><i className="bi bi-chat-dots me-2"></i>Comentários ({comments.length})</h2>
-              <button 
-                className={`btn ${showCommentForm ? 'btn-cosmic-outline' : 'btn-cosmic'}`}
-                onClick={toggleCommentForm}
-              >
-                {showCommentForm ? (<><i className="bi bi-x-circle me-2"></i>Fechar formulário</>) : (<><i className="bi bi-plus-circle me-2"></i>Adicionar comentário</>)}
-              </button>
+              {isUserAuthenticated ? (
+                <button 
+                  className={`btn ${showCommentForm ? 'btn-cosmic-outline' : 'btn-cosmic'}`}
+                  onClick={toggleCommentForm}
+                  disabled={userHasCommented}
+                  title={userHasCommented ? "Você já comentou este filme" : ""}
+                >
+                  {showCommentForm ? (
+                    <><i className="bi bi-x-circle me-2"></i>Fechar formulário</>
+                  ) : userHasCommented ? (
+                    <><i className="bi bi-check-circle me-2"></i>Já comentado</>
+                  ) : (
+                    <><i className="bi bi-plus-circle me-2"></i>Adicionar comentário</>
+                  )}
+                </button>
+              ) : (
+                <Link to="/login" className="btn btn-cosmic-outline">
+                  <i className="bi bi-box-arrow-in-right me-2"></i>Faça login para comentar
+                </Link>
+              )}
             </div>
           
             <div className={`card-body ${showCommentForm ? '' : 'd-none'}`}>
@@ -275,19 +394,6 @@ const MovieDetail: React.FC = () => {
                 </div>
                 <div className="card-body">
                   <form onSubmit={handleSubmitComment}>
-                    <div className="mb-3">
-                      <label htmlFor="name" className="form-label fw-bold text-start d-block text-star">Nome</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="name"
-                        name="name"
-                        value={newComment.name}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    
                     <div className="mb-3">
                       <label htmlFor="text" className="form-label fw-bold text-start d-block text-star">Comentário</label>
                       <textarea
@@ -317,6 +423,12 @@ const MovieDetail: React.FC = () => {
                         <option value="5">5 - Excelente</option>
                       </select>
                     </div>
+
+                    {commentFormError && (
+                      <div className="alert alert-danger">
+                        {commentFormError}
+                      </div>
+                    )}
                     
                     <div className="d-flex justify-content-between">
                       <button 
@@ -326,7 +438,7 @@ const MovieDetail: React.FC = () => {
                       >
                         <i className="bi bi-x-circle me-2"></i>Cancelar
                       </button>
-                      <button type="submit" className="btn btn-cosmic">
+                      <button type="submit" className="btn btn-cosmic" disabled={commentLoading}>
                         <i className="bi bi-send me-2"></i>Enviar Comentário
                       </button>
                     </div>
@@ -364,6 +476,22 @@ const MovieDetail: React.FC = () => {
                     <p className="text-light opacity-75 text-end m-0">
                         {new Date(comment.date).toLocaleDateString('pt-PT')}
                     </p>
+                    {isUserAuthenticated && currentUser && comment.name === currentUser.name && comment.email === currentUser.email && (
+                      <div className="d-flex justify-content-end mt-2">
+                        <button 
+                          className="btn btn-sm btn-cosmic-outline me-2" 
+                          onClick={() => handleEditComment(comment)}
+                        >
+                          <i className="bi bi-pencil me-2"></i>Editar
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-danger" 
+                          onClick={() => handleDeleteComment(comment)}
+                        >
+                          <i className="bi bi-trash me-2"></i>Excluir
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -371,6 +499,136 @@ const MovieDetail: React.FC = () => {
           )}
         </div>
       </div>
+
+      {editingCommentId && (
+        <div className="modal show d-block" tabIndex={-1} role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content" style={{ background: 'var(--space-navy)', border: '1px solid var(--nebula-pink)', borderRadius: '10px' }}>
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--space-purple)' }}>
+                <h5 className="modal-title text-nebula-pink">
+                  <i className="bi bi-pencil-square me-2"></i>Editar Comentário
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setEditingCommentId(null)} aria-label="Fechar"></button>
+              </div>
+              <div className="modal-body">
+                {editCommentError && (
+                  <div className="alert alert-planet mb-3" style={{ backgroundColor: 'rgba(255, 140, 66, 0.2)', color: 'var(--star-yellow)', border: '1px solid var(--planet-orange)' }}>
+                    <i className="bi bi-exclamation-triangle me-2"></i>
+                    {editCommentError}
+                  </div>
+                )}
+                
+                <form onSubmit={handleUpdateComment}>
+                  <div className="mb-3">
+                    <label htmlFor="editCommentText" className="form-label fw-bold text-start d-block text-star">Comentário</label>
+                    <textarea
+                      className="form-control"
+                      id="editCommentText"
+                      name="editCommentText"
+                      rows={3}
+                      value={editCommentText}
+                      onChange={(e) => setEditCommentText(e.target.value)}
+                      required
+                    ></textarea>
+                  </div>
+                  <div className="mb-4">
+                    <label htmlFor="editCommentRating" className="form-label fw-bold text-start d-block text-star">Avaliação</label>
+                    <select
+                      className="form-select"
+                      id="editCommentRating"
+                      name="editCommentRating"
+                      value={editCommentRating}
+                      onChange={(e) => setEditCommentRating(parseInt(e.target.value, 10))}
+                    >
+                      <option value="1">1 - Mau</option>
+                      <option value="2">2 - Razoável</option>
+                      <option value="3">3 - Bom</option>
+                      <option value="4">4 - Muito Bom</option>
+                      <option value="5">5 - Excelente</option>
+                    </select>
+                  </div>
+                  
+                  <div className="d-flex justify-content-between">
+                    <button 
+                      type="button" 
+                      className="btn btn-cosmic-outline" 
+                      onClick={() => setEditingCommentId(null)}
+                    >
+                      <i className="bi bi-x-circle me-2"></i>Cancelar
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="btn btn-cosmic" 
+                      disabled={editCommentLoading}
+                    >
+                      {editCommentLoading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          A guardar...
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-save me-2"></i>Guardar alterações
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="modal show d-block" tabIndex={-1} role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content" style={{ background: 'var(--space-navy)', border: '1px solid var(--planet-red)', borderRadius: '10px' }}>
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--planet-red)' }}>
+                <h5 className="modal-title" style={{ color: 'var(--planet-red)' }}>
+                  <i className="bi bi-exclamation-triangle me-2"></i>Excluir Comentário
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowDeleteModal(false)} aria-label="Fechar"></button>
+              </div>
+              <div className="modal-body">
+                <p className="text-light">Tem certeza de que deseja excluir este comentário?</p>
+                <p className="text-light"><small>Esta ação não pode ser desfeita.</small></p>
+              </div>
+              <div className="modal-footer" style={{ borderTop: '1px solid var(--space-purple)' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-cosmic-outline" 
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  <i className="bi bi-x-circle me-2"></i>Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger" 
+                  onClick={confirmDeleteComment} 
+                  disabled={deleteLoading}
+                >
+                  {deleteLoading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      A excluir...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-trash me-2"></i>Excluir
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Backdrop para os modais quando estiverem abertos */}
+      {(editingCommentId || showDeleteModal) && (
+        <div className="modal-backdrop fade show"></div>
+      )}
     </div>
   );
 };
