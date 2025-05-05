@@ -1,8 +1,28 @@
 import axios from 'axios';
 import { Movie } from '../types/MovieTypes';
 import { handleApiError, handleAndNotifyError } from './errorHandler';
+import { getToken } from './authService';
 
 const API_URL = 'http://localhost:5000/api';
+
+// Criando uma instância do axios com configuração base
+const apiClient = axios.create({
+  baseURL: API_URL
+});
+
+// Adicionando um interceptor para incluir o token de autenticação em todas as requisições
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = getToken();
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export interface Comment {
   _id: string;
@@ -49,6 +69,7 @@ export interface MovieFilterParams {
   search?: string;
   genre?: string;
   sort?: SortOption;
+  userListType?: string;
 }
 
 export interface MovieListStatus {
@@ -60,15 +81,41 @@ export interface MovieListStatus {
 export type ListType = 'favorite' | 'watched' | 'watchlist';
 
 export const fetchMovies = async (params: MovieFilterParams = {}): Promise<PaginatedResponse<Movie>> => {
-  const { page = 1, limit = 20, search = '', genre = '', sort = SortOption.TITLE_ASC } = params;
+  const { page = 1, limit = 20, search = '', genre = '', sort = SortOption.RATING_DESC, userListType = '' } = params;
   try {
-    const response = await axios.get(`${API_URL}/movies`, {
+    const response = await apiClient.get('/movies', {
       params: {
         page,
         limit,
         search,
         genre,
-        sort
+        sort,
+        userListType
+      }
+    });
+    return response.data;
+  } catch (error) {
+    handleAndNotifyError(error);
+    return {
+      movies: [],
+      totalPages: 0,
+      currentPage: page,
+      total: 0
+    };
+  }
+};
+
+export const fetchMoviesWithStatus = async (params: MovieFilterParams = {}): Promise<PaginatedResponse<Movie>> => {
+  const { page = 1, limit = 20, search = '', genre = '', sort = SortOption.YEAR_DESC, userListType = '' } = params;
+  try {
+    const response = await apiClient.get('/movies/with-status', {
+      params: {
+        page,
+        limit,
+        search,
+        genre,
+        sort,
+        userListType
       }
     });
     return response.data;
@@ -85,7 +132,7 @@ export const fetchMovies = async (params: MovieFilterParams = {}): Promise<Pagin
 
 export const fetchMovieById = async (id: string): Promise<Movie | null> => {
   try {
-    const response = await axios.get(`${API_URL}/movies/${id}`);
+    const response = await apiClient.get(`/movies/${id}`);
     return response.data;
   } catch (error) {
     handleAndNotifyError(error);
@@ -95,7 +142,7 @@ export const fetchMovieById = async (id: string): Promise<Movie | null> => {
 
 export const fetchGenres = async (): Promise<string[]> => {
   try {
-    const response = await axios.get(`${API_URL}/movies/genres`);
+    const response = await apiClient.get('/movies/genres');
     return response.data;
   } catch (error) {
     handleAndNotifyError(error);
@@ -105,7 +152,7 @@ export const fetchGenres = async (): Promise<string[]> => {
 
 export const fetchCommentsByMovieId = async (movieId: string): Promise<Comment[]> => {
   try {
-    const response = await axios.get(`${API_URL}/comments/movie/${movieId}`);
+    const response = await apiClient.get(`/comments/movie/${movieId}`);
     return response.data;
   } catch (error) {
     handleAndNotifyError(error);
@@ -115,7 +162,7 @@ export const fetchCommentsByMovieId = async (movieId: string): Promise<Comment[]
 
 export const addComment = async (comment: NewComment): Promise<Comment | null> => {
   try {
-    const response = await axios.post(`${API_URL}/comments`, comment);
+    const response = await apiClient.post('/comments', comment);
     return response.data;
   } catch (error) {
     const apiError = handleApiError(error);
@@ -125,7 +172,7 @@ export const addComment = async (comment: NewComment): Promise<Comment | null> =
 
 export const updateComment = async (commentId: string, data: UpdateComment): Promise<Comment | null> => {
   try {
-    const response = await axios.put(`${API_URL}/comments/${commentId}`, data);
+    const response = await apiClient.put(`/comments/${commentId}`, data);
     return response.data;
   } catch (error) {
     const apiError = handleApiError(error);
@@ -135,7 +182,7 @@ export const updateComment = async (commentId: string, data: UpdateComment): Pro
 
 export const deleteComment = async (commentId: string): Promise<boolean> => {
   try {
-    await axios.delete(`${API_URL}/comments/${commentId}`);
+    await apiClient.delete(`/comments/${commentId}`);
     return true;
   } catch (error) {
     const apiError = handleApiError(error);
@@ -147,7 +194,7 @@ export const deleteComment = async (commentId: string): Promise<boolean> => {
 
 export const addMovieToList = async (movieId: string, listType: ListType): Promise<boolean> => {
   try {
-    const response = await axios.post(`${API_URL}/movies/list`, {
+    const response = await apiClient.post('/movies/list', {
       movie_id: movieId,
       list_type: listType
     });
@@ -160,7 +207,7 @@ export const addMovieToList = async (movieId: string, listType: ListType): Promi
 
 export const removeMovieFromList = async (movieId: string, listType: ListType): Promise<boolean> => {
   try {
-    const response = await axios.delete(`${API_URL}/movies/list/${movieId}/${listType}`);
+    const response = await apiClient.delete(`/movies/list/${movieId}/${listType}`);
     return response.data.success;
   } catch (error) {
     const apiError = handleApiError(error);
@@ -170,7 +217,7 @@ export const removeMovieFromList = async (movieId: string, listType: ListType): 
 
 export const checkMovieInLists = async (movieId: string): Promise<MovieListStatus | null> => {
   try {
-    const response = await axios.get(`${API_URL}/movies/check-lists/${movieId}`);
+    const response = await apiClient.get(`/movies/check-lists/${movieId}`);
     return response.data.success ? response.data.data : null;
   } catch (error) {
     handleAndNotifyError(error);
@@ -180,7 +227,7 @@ export const checkMovieInLists = async (movieId: string): Promise<MovieListStatu
 
 export const getMoviesFromList = async (listType: ListType): Promise<Movie[]> => {
   try {
-    const response = await axios.get(`${API_URL}/movies/list/${listType}`);
+    const response = await apiClient.get(`/movies/list/${listType}`);
     return response.data.success ? response.data.data.map((item: any) => item.movie) : [];
   } catch (error) {
     handleAndNotifyError(error);

@@ -2,6 +2,12 @@ import { ImdbRating } from './ImdbTypes';
 import { TomatoesRating } from './TomatoesTypes';
 import { Awards } from './AwardsTypes';
 
+export interface UserLists {
+  favorite: boolean;
+  watched: boolean;
+  watchlist: boolean;
+}
+
 export interface Movie {
   _id: string;
   title: string;
@@ -23,4 +29,5 @@ export interface Movie {
   cast?: string[];
   num_mflix_comments?: number;
   lastupdated?: string;
+  userLists?: UserLists;
 }

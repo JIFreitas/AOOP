@@ -1,17 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  fetchMovies, 
+  fetchMoviesWithStatus, 
   fetchGenres, 
   fetchCommentsByMovieId, 
   addComment, 
-  PaginatedResponse, 
   SortOption, 
   MovieFilterParams,
   addMovieToList,
   removeMovieFromList,
-  checkMovieInLists,
-  MovieListStatus,
   ListType
 } from '../services/api';
 import { Movie } from '../types/MovieTypes';
@@ -27,13 +24,14 @@ const MovieList: React.FC = () => {
   const [genres, setGenres] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGenre, setSelectedGenre] = useState<string>('');
-  const [sortOption, setSortOption] = useState<SortOption>(SortOption.TITLE_ASC);
+  const [sortOption, setSortOption] = useState<SortOption>(SortOption.YEAR_DESC); // Mudado para ano descendente
   const [filterParams, setFilterParams] = useState<MovieFilterParams>({
     page: 1,
     limit: 18,
     search: '',
     genre: '',
-    sort: SortOption.TITLE_ASC
+    sort: SortOption.YEAR_DESC, // Mudado para ano descendente
+    userListType: ''
   });
   
   // Estados para gerenciar os comentários e o modal
@@ -49,8 +47,7 @@ const MovieList: React.FC = () => {
   const isUserAuthenticated = isAuthenticated();
   const currentUser = getCurrentUser();
   
-  // Estado para armazenar status de listas para cada filme
-  const [movieListsStatus, setMovieListsStatus] = useState<Record<string, MovieListStatus>>({});
+  // Estado para controlar o carregamento dos botões de listas
   const [listLoading, setListLoading] = useState<Record<string, Record<ListType, boolean>>>({});
   
   useEffect(() => {
@@ -66,34 +63,23 @@ const MovieList: React.FC = () => {
     const getMovies = async () => {
       try {
         setLoading(true);
-        const data: PaginatedResponse<Movie> = await fetchMovies(filterParams);
+        const data = await fetchMoviesWithStatus(filterParams);
         setMovies(data.movies || []);
         setTotalPages(data.totalPages);
         setCurrentPage(data.currentPage);
         setTotalMovies(data.total);
         setError(null);
         
-        // Verificar status das listas para cada filme (se o usuário estiver autenticado)
-        if (isUserAuthenticated && currentUser) {
-          const movieStatusPromises = data.movies.map(movie => checkMovieInLists(movie._id));
-          const movieStatusResults = await Promise.allSettled(movieStatusPromises);
-          
-          const newMovieListsStatus: Record<string, MovieListStatus> = {};
+        // Inicializar o estado de carregamento para cada filme
+        if (isUserAuthenticated) {
           const newListLoading: Record<string, Record<ListType, boolean>> = {};
-          
-          movieStatusResults.forEach((result, index) => {
-            if (result.status === 'fulfilled' && result.value) {
-              const movieId = data.movies[index]._id;
-              newMovieListsStatus[movieId] = result.value;
-              newListLoading[movieId] = {
-                favorite: false,
-                watched: false,
-                watchlist: false
-              };
-            }
+          data.movies.forEach(movie => {
+            newListLoading[movie._id] = {
+              favorite: false,
+              watched: false,
+              watchlist: false
+            };
           });
-          
-          setMovieListsStatus(newMovieListsStatus);
           setListLoading(newListLoading);
         }
       } catch (err) {
@@ -123,19 +109,21 @@ const MovieList: React.FC = () => {
       search: searchQuery,
       genre: selectedGenre,
       sort: sortOption
+      // Mantendo o valor existente de userListType
     }));
   };
 
   const handleClearFilters = () => {
     setSearchQuery('');
     setSelectedGenre('');
-    setSortOption(SortOption.TITLE_ASC);
+    setSortOption(SortOption.YEAR_DESC);
     setFilterParams({
       page: 1,
       limit: 18,
       search: '',
       genre: '',
-      sort: SortOption.TITLE_ASC
+      sort: SortOption.YEAR_DESC,
+      userListType: ''
     });
   };
 
@@ -206,7 +194,8 @@ const MovieList: React.FC = () => {
     return (
       searchQuery !== '' || 
       selectedGenre !== '' || 
-      sortOption !== SortOption.TITLE_ASC
+      sortOption !== SortOption.YEAR_DESC ||
+      filterParams.userListType !== ''
     );
   };
   
@@ -310,42 +299,60 @@ const MovieList: React.FC = () => {
     }));
     
     try {
-      const currentStatus = movieListsStatus[movieId]?.[listType] || false;
+      const currentStatus = movie.userLists?.[listType] || false;
       
       if (currentStatus) {
         // Remover da lista
         await removeMovieFromList(movieId, listType);
-        setMovieListsStatus(prev => ({
-          ...prev,
-          [movieId]: {
-            ...prev[movieId],
-            [listType]: false
+        
+        // Atualizar o objeto do filme diretamente na lista de filmes
+        setMovies(prevMovies => prevMovies.map(m => {
+          if (m._id === movieId) {
+            // Garantir que userLists exista, usando um objeto vazio como fallback
+            const currentUserLists = m.userLists || { favorite: false, watched: false, watchlist: false };
+            return {
+              ...m,
+              userLists: {
+                ...currentUserLists,
+                [listType]: false
+              }
+            } as Movie; // Forçar o tipo para Movie
           }
+          return m;
         }));
       } else {
         // Adicionar à lista
         await addMovieToList(movieId, listType);
         
-        // Se a lista for assistido/quero assistir, precisamos atualizar o estado contrário
-        if (listType === 'watched' || listType === 'watchlist') {
-          const oppositeType: ListType = listType === 'watched' ? 'watchlist' : 'watched';
-          setMovieListsStatus(prev => ({
-            ...prev,
-            [movieId]: {
-              ...prev[movieId],
-              [listType]: true,
-              [oppositeType]: false
+        // Atualizar o objeto do filme diretamente na lista de filmes
+        setMovies(prevMovies => prevMovies.map(m => {
+          if (m._id === movieId) {
+            // Garantir que userLists exista, usando um objeto vazio como fallback
+            const currentUserLists = m.userLists || { favorite: false, watched: false, watchlist: false };
+            
+            // Se a lista for assistido/quero assistir, precisamos atualizar o estado contrário
+            if (listType === 'watched' || listType === 'watchlist') {
+              const oppositeType: ListType = listType === 'watched' ? 'watchlist' : 'watched';
+              return {
+                ...m,
+                userLists: {
+                  ...currentUserLists,
+                  [listType]: true,
+                  [oppositeType]: false
+                }
+              } as Movie; // Forçar o tipo para Movie
+            } else {
+              return {
+                ...m,
+                userLists: {
+                  ...currentUserLists,
+                  [listType]: true
+                }
+              } as Movie; // Forçar o tipo para Movie
             }
-          }));
-        } else {
-          setMovieListsStatus(prev => ({
-            ...prev,
-            [movieId]: {
-              ...prev[movieId],
-              [listType]: true
-            }
-          }));
-        }
+          }
+          return m;
+        }));
       }
     } catch (err) {
       console.error(`Erro ao atualizar lista ${listType} para o filme ${movieId}:`, err);
@@ -422,6 +429,26 @@ const MovieList: React.FC = () => {
                 </select>
               </div>
               
+              {isUserAuthenticated && (
+              <div className="col-md-4">
+                <label htmlFor="userListType" className="form-label">Minhas Listas</label>
+                <select 
+                  className="form-select" 
+                  id="userListType"
+                  value={filterParams.userListType || ''}
+                  onChange={(e) => {
+                    const userListType = e.target.value;
+                    setFilterParams(prev => ({...prev, userListType, page: 1}));
+                  }}
+                >
+                  <option value="">Todos os filmes</option>
+                  <option value="favorite">Meus Favoritos</option>
+                  <option value="watched">Filmes Assistidos</option>
+                  <option value="watchlist">Quero Assistir</option>
+                </select>
+              </div>
+              )}
+              
               <div className="col-12">
                 <div className="d-flex gap-2">
                   <button type="submit" className="btn btn-cosmic">
@@ -458,8 +485,15 @@ const MovieList: React.FC = () => {
               Foram encontrados <strong>{totalMovies}</strong> filmes 
               {filterParams.search && <span> contendo "<strong>{filterParams.search}</strong>"</span>}
               {filterParams.genre && <span> do género <strong>{filterParams.genre}</strong></span>}
-              {filterParams.sort !== SortOption.TITLE_ASC && 
-                <span> ordenados por <strong>{getSortOptionLabel(filterParams.sort || SortOption.TITLE_ASC)}</strong></span>
+              {filterParams.userListType && (
+                <span> na lista <strong>
+                  {filterParams.userListType === 'favorite' && 'Meus Favoritos'}
+                  {filterParams.userListType === 'watched' && 'Filmes Assistidos'}
+                  {filterParams.userListType === 'watchlist' && 'Quero Assistir'}
+                </strong></span>
+              )}
+              {filterParams.sort !== SortOption.RATING_DESC && 
+                <span> ordenados por <strong>{getSortOptionLabel(filterParams.sort || SortOption.RATING_DESC)}</strong></span>
               }
             </span>
           )}
@@ -503,34 +537,35 @@ const MovieList: React.FC = () => {
                     {isUserAuthenticated && (
                       <div className="d-flex gap-2">
                         <button 
-                          className="btn btn-cosmic-outline" 
+                          className={`btn ${userComments[movie._id] ? 'btn-info' : 'btn-cosmic-outline'}`} 
                           onClick={() => handleOpenCommentModal(movie)}
                           disabled={userComments[movie._id]}
                           title={userComments[movie._id] ? "Já comentou este filme" : "Adicionar comentário"}
                         >
-                          <i className="bi bi-chat-dots-fill"></i>
+                          <i className={`bi ${userComments[movie._id] ? 'bi-chat-square-text-fill' : 'bi-chat-dots-fill'}`}></i>
+                          {userComments[movie._id] && <span className="ms-1">Comentado</span>}
                         </button>
                         <button 
-                          className={`btn ${movieListsStatus[movie._id]?.favorite ? 'btn-danger' : 'btn-outline-danger'}`} 
+                          className={`btn ${movie.userLists?.favorite ? 'btn-danger' : 'btn-outline-danger'}`} 
                           onClick={() => toggleMovieList(movie, 'favorite')}
                           disabled={listLoading[movie._id]?.favorite}
-                          title={movieListsStatus[movie._id]?.favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                          title={movie.userLists?.favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                         >
                           <i className="bi bi-heart-fill"></i>
                         </button>
                         <button 
-                          className={`btn ${movieListsStatus[movie._id]?.watched ? 'btn-success' : 'btn-outline-success'}`} 
+                          className={`btn ${movie.userLists?.watched ? 'btn-success' : 'btn-outline-success'}`} 
                           onClick={() => toggleMovieList(movie, 'watched')}
                           disabled={listLoading[movie._id]?.watched}
-                          title={movieListsStatus[movie._id]?.watched ? "Remover dos assistidos" : "Adicionar aos assistidos"}
+                          title={movie.userLists?.watched ? "Remover dos assistidos" : "Adicionar aos assistidos"}
                         >
                           <i className="bi bi-eye-fill"></i>
                         </button>
                         <button 
-                          className={`btn ${movieListsStatus[movie._id]?.watchlist ? 'btn-warning' : 'btn-outline-warning'}`} 
+                          className={`btn ${movie.userLists?.watchlist ? 'btn-warning' : 'btn-outline-warning'}`} 
                           onClick={() => toggleMovieList(movie, 'watchlist')}
                           disabled={listLoading[movie._id]?.watchlist}
-                          title={movieListsStatus[movie._id]?.watchlist ? "Remover da lista de desejos" : "Adicionar à lista de desejos"}
+                          title={movie.userLists?.watchlist ? "Remover da lista de desejos" : "Adicionar à lista de desejos"}
                         >
                           <i className="bi bi-bookmark-fill"></i>
                         </button>

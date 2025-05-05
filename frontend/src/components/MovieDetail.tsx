@@ -426,50 +426,59 @@ const MovieDetail: React.FC = () => {
               <h3 className="h5 mb-0 text-star"><i className="bi bi-list-check me-2"></i>Minhas Listas</h3>
             </div>
             <div className="card-body">
-              <div className="d-flex justify-content-around">
-                <button 
-                  className={`btn ${movieLists.favorite ? 'btn-cosmic' : 'btn-cosmic-outline'}`} 
-                  onClick={() => toggleMovieList('favorite')}
-                  disabled={listLoading.favorite}
-                >
-                  {listLoading.favorite ? (
-                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                  ) : (
-                    <>
-                      <i className={`bi ${movieLists.favorite ? 'bi-heart-fill' : 'bi-heart'} me-2`}></i>
-                      {movieLists.favorite ? 'Favorito' : 'Adicionar aos Favoritos'}
-                    </>
-                  )}
-                </button>
-                <button 
-                  className={`btn ${movieLists.watched ? 'btn-cosmic' : 'btn-cosmic-outline'}`} 
-                  onClick={() => toggleMovieList('watched')}
-                  disabled={listLoading.watched}
-                >
-                  {listLoading.watched ? (
-                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                  ) : (
-                    <>
-                      <i className={`bi ${movieLists.watched ? 'bi-eye-fill' : 'bi-eye'} me-2`}></i>
-                      {movieLists.watched ? 'Assistido' : 'Marcar como Assistido'}
-                    </>
-                  )}
-                </button>
-                <button 
-                  className={`btn ${movieLists.watchlist ? 'btn-cosmic' : 'btn-cosmic-outline'}`} 
-                  onClick={() => toggleMovieList('watchlist')}
-                  disabled={listLoading.watchlist}
-                >
-                  {listLoading.watchlist ? (
-                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                  ) : (
-                    <>
-                      <i className={`bi ${movieLists.watchlist ? 'bi-bookmark-fill' : 'bi-bookmark'} me-2`}></i>
-                      {movieLists.watchlist ? 'Na Lista de Assistir' : 'Adicionar à Lista de Assistir'}
-                    </>
-                  )}
-                </button>
-              </div>
+              {isUserAuthenticated ? (
+                <div className="d-flex justify-content-around">
+                  <button 
+                    className={`btn ${movieLists.favorite ? 'btn-cosmic' : 'btn-cosmic-outline'}`} 
+                    onClick={() => toggleMovieList('favorite')}
+                    disabled={listLoading.favorite}
+                  >
+                    {listLoading.favorite ? (
+                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    ) : (
+                      <>
+                        <i className={`bi ${movieLists.favorite ? 'bi-heart-fill' : 'bi-heart'} me-2`}></i>
+                        {movieLists.favorite ? 'Favorito' : 'Adicionar aos Favoritos'}
+                      </>
+                    )}
+                  </button>
+                  <button 
+                    className={`btn ${movieLists.watched ? 'btn-cosmic' : 'btn-cosmic-outline'}`} 
+                    onClick={() => toggleMovieList('watched')}
+                    disabled={listLoading.watched}
+                  >
+                    {listLoading.watched ? (
+                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    ) : (
+                      <>
+                        <i className={`bi ${movieLists.watched ? 'bi-eye-fill' : 'bi-eye'} me-2`}></i>
+                        {movieLists.watched ? 'Assistido' : 'Marcar como Assistido'}
+                      </>
+                    )}
+                  </button>
+                  <button 
+                    className={`btn ${movieLists.watchlist ? 'btn-cosmic' : 'btn-cosmic-outline'}`} 
+                    onClick={() => toggleMovieList('watchlist')}
+                    disabled={listLoading.watchlist}
+                  >
+                    {listLoading.watchlist ? (
+                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    ) : (
+                      <>
+                        <i className={`bi ${movieLists.watchlist ? 'bi-bookmark-fill' : 'bi-bookmark'} me-2`}></i>
+                        {movieLists.watchlist ? 'Na Lista de Assistir' : 'Adicionar à Lista de Assistir'}
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <p className="mb-3 text-nebula-teal">Faça login para adicionar este filme às suas listas pessoais</p>
+                  <Link to="/login" className="btn btn-cosmic">
+                    <i className="bi bi-box-arrow-in-right me-2"></i>Entrar
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -588,25 +597,27 @@ const MovieDetail: React.FC = () => {
                     <hr className="cosmic-divider" />
                     <p className="card-text text-light">{comment.text}</p>
                     <hr className="cosmic-divider" />
-                    <p className="text-light opacity-75 text-end m-0">
-                        {new Date(comment.date).toLocaleDateString('pt-PT')}
-                    </p>
-                    {isUserAuthenticated && currentUser && comment.name === currentUser.name && comment.email === currentUser.email && (
-                      <div className="d-flex justify-content-end mt-2">
+                    <div className="d-flex justify-content-between align-items-center mt-2">
+                      {isUserAuthenticated && currentUser && comment.name === currentUser.name && comment.email === currentUser.email && (
+                      <div>
                         <button 
-                          className="btn btn-sm btn-cosmic-outline me-2" 
-                          onClick={() => handleEditComment(comment)}
+                        className="btn btn-sm btn-cosmic-outline me-2" 
+                        onClick={() => handleEditComment(comment)}
                         >
-                          <i className="bi bi-pencil me-2"></i>Editar
+                        <i className="bi bi-pencil me-2"></i>Editar
                         </button>
                         <button 
-                          className="btn btn-sm btn-danger" 
-                          onClick={() => handleDeleteComment(comment)}
+                        className="btn btn-sm btn-danger" 
+                        onClick={() => handleDeleteComment(comment)}
                         >
-                          <i className="bi bi-trash me-2"></i>Excluir
+                        <i className="bi bi-trash me-2"></i>Excluir
                         </button>
                       </div>
-                    )}
+                      )}
+                      <p className="text-light opacity-75 text-end m-0 ms-auto">
+                      {new Date(comment.date).toLocaleDateString('pt-PT')}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
