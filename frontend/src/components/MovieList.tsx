@@ -73,14 +73,25 @@ const MovieList: React.FC = () => {
         // Inicializar o estado de carregamento para cada filme
         if (isUserAuthenticated) {
           const newListLoading: Record<string, Record<ListType, boolean>> = {};
+          
+          // Atualizar o estado de comentários com base na informação retornada pela API
+          const newUserComments: Record<string, boolean> = {};
+          
           data.movies.forEach(movie => {
             newListLoading[movie._id] = {
               favorite: false,
               watched: false,
               watchlist: false
             };
+            
+            // Se o filme tiver a propriedade userCommented como true, significa que o usuário já comentou este filme
+            if (movie.userCommented) {
+              newUserComments[movie._id] = true;
+            }
           });
+          
           setListLoading(newListLoading);
+          setUserComments(newUserComments);
         }
       } catch (err) {
         setError('Falha ao carregar os filmes. Por favor, tente novamente.');
@@ -109,7 +120,6 @@ const MovieList: React.FC = () => {
       search: searchQuery,
       genre: selectedGenre,
       sort: sortOption
-      // Mantendo o valor existente de userListType
     }));
   };
 
@@ -269,8 +279,26 @@ const MovieList: React.FC = () => {
         [selectedMovie._id]: true
       }));
       
-      handleCloseCommentModal();
-      alert('Comentário adicionado com sucesso!');
+      // Fechar o modal e limpar os estados
+      setShowCommentModal(false);
+      
+      // Mostrar mensagem de sucesso em uma div flutuante que desaparece após alguns segundos
+      const successAlert = document.createElement('div');
+      successAlert.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-4 shadow-lg';
+      successAlert.style.zIndex = '9999';
+      successAlert.style.maxWidth = '350px';
+      successAlert.innerHTML = `
+        <div class="d-flex align-items-center">
+          <i class="bi bi-check-circle-fill me-2"></i>
+          <span>Comentário adicionado com sucesso!</span>
+        </div>
+      `;
+      document.body.appendChild(successAlert);
+      
+      // Remover a notificação após 3 segundos
+      setTimeout(() => {
+        document.body.removeChild(successAlert);
+      }, 3000);
       
     } catch (err: any) {
       console.error('Erro ao adicionar comentário:', err);
@@ -543,7 +571,6 @@ const MovieList: React.FC = () => {
                           title={userComments[movie._id] ? "Já comentou este filme" : "Adicionar comentário"}
                         >
                           <i className={`bi ${userComments[movie._id] ? 'bi-chat-square-text-fill' : 'bi-chat-dots-fill'}`}></i>
-                          {userComments[movie._id] && <span className="ms-1">Comentado</span>}
                         </button>
                         <button 
                           className={`btn ${movie.userLists?.favorite ? 'btn-danger' : 'btn-outline-danger'}`} 
@@ -551,7 +578,11 @@ const MovieList: React.FC = () => {
                           disabled={listLoading[movie._id]?.favorite}
                           title={movie.userLists?.favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                         >
-                          <i className="bi bi-heart-fill"></i>
+                          {listLoading[movie._id]?.favorite ? (
+                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                          ) : (
+                            <i className="bi bi-heart-fill"></i>
+                          )}
                         </button>
                         <button 
                           className={`btn ${movie.userLists?.watched ? 'btn-success' : 'btn-outline-success'}`} 
@@ -559,7 +590,11 @@ const MovieList: React.FC = () => {
                           disabled={listLoading[movie._id]?.watched}
                           title={movie.userLists?.watched ? "Remover dos assistidos" : "Adicionar aos assistidos"}
                         >
-                          <i className="bi bi-eye-fill"></i>
+                          {listLoading[movie._id]?.watched ? (
+                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                          ) : (
+                            <i className="bi bi-eye-fill"></i>
+                          )}
                         </button>
                         <button 
                           className={`btn ${movie.userLists?.watchlist ? 'btn-warning' : 'btn-outline-warning'}`} 
@@ -567,7 +602,11 @@ const MovieList: React.FC = () => {
                           disabled={listLoading[movie._id]?.watchlist}
                           title={movie.userLists?.watchlist ? "Remover da lista de desejos" : "Adicionar à lista de desejos"}
                         >
-                          <i className="bi bi-bookmark-fill"></i>
+                          {listLoading[movie._id]?.watchlist ? (
+                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                          ) : (
+                            <i className="bi bi-bookmark-fill"></i>
+                          )}
                         </button>
                       </div>
                     )}
@@ -582,9 +621,9 @@ const MovieList: React.FC = () => {
       {totalPages > 1 && (
         <nav aria-label="Navegação de páginas">
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <p className="mb-0">
+            <span className="mb-0" style={{ color: 'var(--nebula-teal)', textShadow: '0px 0px 5px rgba(8, 217, 214, 0.5)' }}>
               A mostrar <b>{(currentPage - 1) * filterParams.limit! + 1}-{Math.min(currentPage * filterParams.limit!, totalMovies)}</b> de <b>{totalMovies}</b> filmes
-            </p>
+            </span>
           </div>
           <ul className="pagination justify-content-center">
             {/* Primeira página sempre visível */}

@@ -132,7 +132,8 @@ export const fetchMoviesWithStatus = async (params: MovieFilterParams = {}): Pro
 
 export const fetchMovieById = async (id: string): Promise<Movie | null> => {
   try {
-    const response = await apiClient.get(`/movies/${id}`);
+    // Usar o novo endpoint com informações de status do usuário
+    const response = await apiClient.get(`/movies/with-user-status/${id}`);
     return response.data;
   } catch (error) {
     handleAndNotifyError(error);

@@ -79,21 +79,18 @@ const MovieDetail: React.FC = () => {
         const commentsData = await fetchCommentsByMovieId(id);
         setComments(commentsData);
         
-        // Verificar se o usuário atual já comentou este filme
-        if (isUserAuthenticated && currentUser) {
-          const userComment = commentsData.find(comment => 
-            comment.name === currentUser.name && comment.email === currentUser.email
-          );
-          setUserHasCommented(!!userComment);
-          setUserComment(userComment || null);
+        // Verificar se o usuário atual já comentou este filme com base nos dados retornados pela API
+        if (isUserAuthenticated && movieData.userComment) {
+          setUserHasCommented(true);
+          setUserComment(movieData.userComment);
+        } else {
+          setUserHasCommented(false);
+          setUserComment(null);
         }
 
-        // Verificar em quais listas do usuário este filme está
-        if (isUserAuthenticated) {
-          const listsStatus = await checkMovieInLists(id);
-          if (listsStatus) {
-            setMovieLists(listsStatus);
-          }
+        // Usar as informações de listas do usuário vindas do endpoint
+        if (isUserAuthenticated && movieData.userLists) {
+          setMovieLists(movieData.userLists);
         }
         
         setError(null);
@@ -106,9 +103,7 @@ const MovieDetail: React.FC = () => {
     };
 
     fetchData();
-    // Removemos isUserAuthenticated e currentUser das dependências
-    // porque eles são constantes que não mudam durante o ciclo de vida do componente
-  }, [id]);
+  }, [id, isUserAuthenticated]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -147,6 +142,24 @@ const MovieDetail: React.FC = () => {
         setNewComment({ text: '', rating: 5 });
         setUserHasCommented(true);
         setShowCommentForm(false);
+        
+        // Mostrar mensagem de sucesso em uma div flutuante que desaparece após alguns segundos
+        const successAlert = document.createElement('div');
+        successAlert.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-4 shadow-lg';
+        successAlert.style.zIndex = '9999';
+        successAlert.style.maxWidth = '350px';
+        successAlert.innerHTML = `
+          <div class="d-flex align-items-center">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <span>Comentário adicionado com sucesso!</span>
+          </div>
+        `;
+        document.body.appendChild(successAlert);
+        
+        // Remover a notificação após 3 segundos
+        setTimeout(() => {
+          document.body.removeChild(successAlert);
+        }, 3000);
       }
     } catch (err) {
       console.error('Error adding comment:', err);
@@ -214,6 +227,10 @@ const MovieDetail: React.FC = () => {
         setComments(prev => prev.filter(comment => comment._id !== commentToDelete._id));
         setShowDeleteModal(false);
         setCommentToDelete(null);
+        
+        // Atualizar o estado para indicar que o usuário não tem mais comentário
+        setUserHasCommented(false);
+        setUserComment(null);
       }
     } catch (err) {
       console.error('Error deleting comment:', err);
@@ -434,7 +451,7 @@ const MovieDetail: React.FC = () => {
                     disabled={listLoading.favorite}
                   >
                     {listLoading.favorite ? (
-                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                     ) : (
                       <>
                         <i className={`bi ${movieLists.favorite ? 'bi-heart-fill' : 'bi-heart'} me-2`}></i>
@@ -448,7 +465,7 @@ const MovieDetail: React.FC = () => {
                     disabled={listLoading.watched}
                   >
                     {listLoading.watched ? (
-                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                     ) : (
                       <>
                         <i className={`bi ${movieLists.watched ? 'bi-eye-fill' : 'bi-eye'} me-2`}></i>
@@ -462,7 +479,7 @@ const MovieDetail: React.FC = () => {
                     disabled={listLoading.watchlist}
                   >
                     {listLoading.watchlist ? (
-                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                     ) : (
                       <>
                         <i className={`bi ${movieLists.watchlist ? 'bi-bookmark-fill' : 'bi-bookmark'} me-2`}></i>
