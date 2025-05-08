@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { handleApiError } from './errorHandler';
 
-const API_URL = 'http://localhost:5000/api/auth';
+const API_URL = 'https://aoop-q9ib.onrender.com/api/auth';
 
 export interface User {
   id: string;
