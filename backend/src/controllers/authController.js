@@ -3,7 +3,6 @@ const Session = require('../models/Session');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
-// Importar configurações de autenticação
 const { authConfig } = require('../config');
 
 exports.register = async (req, res) => {
@@ -26,8 +25,6 @@ exports.register = async (req, res) => {
     
     await user.save();
     
-    // Remover qualquer sessão existente que possa ter sido criada para este usuário
-    // (embora seja improvável neste ponto, é uma medida preventiva)
     await Session.deleteMany({ user_id: user._id });
     
     const token = jwt.sign(

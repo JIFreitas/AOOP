@@ -20,7 +20,7 @@ exports.getMovieComments = async (req, res) => {
 };
 
 exports.addComment = async (req, res) => {
-  const { name, email, movie_id, text } = req.body;
+  const { name, email, movie_id, text, rating } = req.body;
   
   if (!movie_id || !text) {
     return res.status(400).json({ message: 'ID do filme e texto são obrigatórios' });
@@ -35,6 +35,7 @@ exports.addComment = async (req, res) => {
     email,
     movie_id,
     text,
+    rating: rating || 5, // Valor padrão de 5 se não for especificado
     date: new Date()
   });
 

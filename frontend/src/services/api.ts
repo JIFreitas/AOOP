@@ -3,7 +3,7 @@ import { Movie } from '../types/MovieTypes';
 import { handleApiError, handleAndNotifyError } from './errorHandler';
 import { getToken } from './authService';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://aoop-q9ib.onrender.com/api';
 
 // Criando uma instância do axios com configuração base
 const apiClient = axios.create({

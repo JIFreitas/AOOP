@@ -18,14 +18,12 @@ import { isAuthenticated, getCurrentUser } from '../services/authService';
 import { Notification } from '../utils/notification';
 
 const MovieDetail: React.FC = () => {
-  // Estados relacionados ao filme e comentários
   const { id } = useParams<{ id: string }>();
   const [movie, setMovie] = useState<Movie | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Estados relacionados ao formulário de comentário
   const [showCommentForm, setShowCommentForm] = useState<boolean>(false);
   const [userHasCommented, setUserHasCommented] = useState<boolean>(false);
   const [userComment, setUserComment] = useState<Comment | null>(null);
@@ -36,23 +34,19 @@ const MovieDetail: React.FC = () => {
     rating: 5
   });
   
-  // Estados para edição de comentário
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState<string>('');
   const [editCommentRating, setEditCommentRating] = useState<number>(5);
   const [editCommentError, setEditCommentError] = useState<string | null>(null);
   const [editCommentLoading, setEditCommentLoading] = useState<boolean>(false);
   
-  // Estados para exclusão de comentário
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [commentToDelete, setCommentToDelete] = useState<Comment | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
 
-  // Verificar se o usuário está autenticado
   const isUserAuthenticated = isAuthenticated();
   const currentUser = getCurrentUser();
 
-  // Estados para listas de filmes
   const [movieLists, setMovieLists] = useState<MovieListStatus>({
     favorite: false,
     watched: false,
@@ -81,13 +75,11 @@ const MovieDetail: React.FC = () => {
         const commentsData = await fetchCommentsByMovieId(id);
         setComments(commentsData);
         
-        // Verificar se o usuário atual já comentou este filme com base nos dados retornados pela API
         if (isUserAuthenticated && movieData.userComment) {
           setUserHasCommented(true);
           const userCommentData = movieData.userComment;
           setUserComment(userCommentData);
           
-          // Pré-preencher o formulário se o usuário já tem um comentário
           setNewComment({
             text: userCommentData.text,
             rating: userCommentData.rating || 5
@@ -97,7 +89,6 @@ const MovieDetail: React.FC = () => {
           setUserComment(null);
         }
 
-        // Usar as informações de listas do usuário vindas do endpoint
         if (isUserAuthenticated && movieData.userLists) {
           setMovieLists(movieData.userLists);
         }
@@ -131,7 +122,7 @@ const MovieDetail: React.FC = () => {
     }
 
     if (!isUserAuthenticated) {
-      setCommentFormError('Você precisa estar logado para comentar');
+      setCommentFormError('Precisa de estar autenticado para comentar');
       return;
     }
 
@@ -139,8 +130,8 @@ const MovieDetail: React.FC = () => {
       setCommentLoading(true);
       const commentData = {
         movie_id: id,
-        name: currentUser?.name || 'Anônimo',
-        email: currentUser?.email, // Adicionando o email do usuário autenticado
+        name: currentUser?.name || 'Anónimo',
+        email: currentUser?.email,
         text: newComment.text,
         rating: newComment.rating
       };
@@ -153,7 +144,6 @@ const MovieDetail: React.FC = () => {
         setUserHasCommented(true);
         setShowCommentForm(false);
         
-        // Mostrar mensagem de sucesso em uma div flutuante que desaparece após alguns segundos
         Notification.success('Comentário adicionado com sucesso!');
       }
     } catch (err) {
@@ -222,7 +212,6 @@ const MovieDetail: React.FC = () => {
         setShowDeleteModal(false);
         setCommentToDelete(null);
         
-        // Atualizar o estado para indicar que o usuário não tem mais comentário
         setUserHasCommented(false);
         setUserComment(null);
       }
@@ -233,7 +222,6 @@ const MovieDetail: React.FC = () => {
     }
   };
 
-  // Função para alternar o status de um filme em uma lista
   const toggleMovieList = async (listType: ListType) => {
     if (!isUserAuthenticated || !id) {
       return;
@@ -246,10 +234,8 @@ const MovieDetail: React.FC = () => {
       const isAdding = !isInList;
       
       if (isAdding) {
-        // Adicionar à lista
         await addMovieToList(id, listType);
         
-        // Se a lista for assistido/quero assistir, atualizar o estado contrário
         if (listType === 'watched' || listType === 'watchlist') {
           const oppositeType: ListType = listType === 'watched' ? 'watchlist' : 'watched';
           setMovieLists(prev => ({ 
@@ -261,7 +247,6 @@ const MovieDetail: React.FC = () => {
           setMovieLists(prev => ({ ...prev, [listType]: true }));
         }
       } else {
-        // Remover da lista
         await removeMovieFromList(id, listType);
         setMovieLists(prev => ({ ...prev, [listType]: false }));
       }
@@ -272,7 +257,6 @@ const MovieDetail: React.FC = () => {
     }
   };
 
-  // Melhorando a lógica de retorno condicional para estados de loading e erro
   if (loading) {
     return (
       <div className="text-center my-5">
@@ -446,7 +430,7 @@ const MovieDetail: React.FC = () => {
 
           <div className="card space-card mt-4">
             <div className="card-header">
-              <h3 className="h5 mb-0 text-star"><i className="bi bi-list-check me-2"></i>Minhas Listas</h3>
+              <h3 className="h5 mb-0 text-star"><i className="bi bi-list-check me-2"></i>As Minhas Listas</h3>
             </div>
             <div className="card-body">
               {isUserAuthenticated ? (
@@ -475,7 +459,7 @@ const MovieDetail: React.FC = () => {
                     ) : (
                       <>
                         <i className={`bi ${movieLists.watched ? 'bi-eye-fill' : 'bi-eye'} me-2`}></i>
-                        {movieLists.watched ? 'Assistido' : 'Marcar como Assistido'}
+                        {movieLists.watched ? 'Visto' : 'Marcar como Visto'}
                       </>
                     )}
                   </button>
@@ -489,14 +473,14 @@ const MovieDetail: React.FC = () => {
                     ) : (
                       <>
                         <i className={`bi ${movieLists.watchlist ? 'bi-bookmark-fill' : 'bi-bookmark'} me-2`}></i>
-                        {movieLists.watchlist ? 'Na Lista de Assistir' : 'Adicionar à Lista de Assistir'}
+                        {movieLists.watchlist ? 'Na Lista Para Ver' : 'Adicionar à Lista Para Ver'}
                       </>
                     )}
                   </button>
                 </div>
               ) : (
                 <div className="text-center">
-                  <p className="mb-3 text-nebula-teal">Faça login para adicionar este filme às suas listas pessoais</p>
+                  <p className="mb-3 text-nebula-teal">Inicie sessão para adicionar este filme às suas listas pessoais</p>
                   <Link to="/login" className="btn btn-cosmic">
                     <i className="bi bi-box-arrow-in-right me-2"></i>Entrar
                   </Link>
@@ -517,7 +501,7 @@ const MovieDetail: React.FC = () => {
                   className={`btn ${showCommentForm ? 'btn-cosmic-outline' : 'btn-cosmic'}`}
                   onClick={toggleCommentForm}
                   disabled={userHasCommented}
-                  title={userHasCommented && userComment ? `Seu comentário: ${userComment.text.substring(0, 30)}...` : ""}
+                  title={userHasCommented && userComment ? `O seu comentário: ${userComment.text.substring(0, 30)}...` : ""}
                 >
                   {showCommentForm ? (
                     <><i className="bi bi-x-circle me-2"></i>Fechar formulário</>
@@ -529,7 +513,7 @@ const MovieDetail: React.FC = () => {
                 </button>
               ) : (
                 <Link to="/login" className="btn btn-cosmic-outline">
-                  <i className="bi bi-box-arrow-in-right me-2"></i>Faça login para comentar
+                  <i className="bi bi-box-arrow-in-right me-2"></i>Inicie sessão para comentar
                 </Link>
               )}
             </div>
@@ -740,7 +724,7 @@ const MovieDetail: React.FC = () => {
                 <button type="button" className="btn-close btn-close-white" onClick={() => setShowDeleteModal(false)} aria-label="Fechar"></button>
               </div>
               <div className="modal-body">
-                <p className="text-light">Tem certeza de que deseja excluir este comentário?</p>
+                <p className="text-light">Tem a certeza que deseja excluir este comentário?</p>
                 <p className="text-light"><small>Esta ação não pode ser desfeita.</small></p>
               </div>
               <div className="modal-footer" style={{ borderTop: '1px solid var(--space-purple)' }}>
@@ -774,7 +758,6 @@ const MovieDetail: React.FC = () => {
         </div>
       )}
       
-      {/* Backdrop para os modais quando estiverem abertos */}
       {(editingCommentId || showDeleteModal) && (
         <div className="modal-backdrop fade show"></div>
       )}

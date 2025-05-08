@@ -14,6 +14,9 @@ router.get('/', optionalAuth, movieController.getAllMovies);
 // Get a list of all movie genres
 router.get('/genres', movieController.getGenres);
 
+// Get a single movie by ID with user status (Rota específica deve vir antes da rota genérica)
+router.get('/with-user-status/:id', optionalAuth, movieController.getMovieWithUserStatus);
+
 // Get a single movie by ID
 router.get('/:id', movieController.getMovieById);
 

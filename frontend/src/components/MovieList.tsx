@@ -24,17 +24,16 @@ const MovieList: React.FC = () => {
   const [genres, setGenres] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGenre, setSelectedGenre] = useState<string>('');
-  const [sortOption, setSortOption] = useState<SortOption>(SortOption.YEAR_DESC); // Mudado para ano descendente
+  const [sortOption, setSortOption] = useState<SortOption>(SortOption.YEAR_DESC);
   const [filterParams, setFilterParams] = useState<MovieFilterParams>({
     page: 1,
     limit: 18,
     search: '',
     genre: '',
-    sort: SortOption.YEAR_DESC, // Mudado para ano descendente
+    sort: SortOption.YEAR_DESC,
     userListType: ''
   });
   
-  // Estados para gerenciar os comentários e o modal
   const [showCommentModal, setShowCommentModal] = useState<boolean>(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [commentText, setCommentText] = useState<string>('');
@@ -43,11 +42,9 @@ const MovieList: React.FC = () => {
   const [commentError, setCommentError] = useState<string | null>(null);
   const [userComments, setUserComments] = useState<{[movieId: string]: boolean}>({});
   
-  // Verificar se o usuário está autenticado
   const isUserAuthenticated = isAuthenticated();
   const currentUser = getCurrentUser();
   
-  // Estado para controlar o carregamento dos botões de listas
   const [listLoading, setListLoading] = useState<Record<string, Record<ListType, boolean>>>({});
   
   useEffect(() => {
@@ -70,11 +67,9 @@ const MovieList: React.FC = () => {
         setTotalMovies(data.total);
         setError(null);
         
-        // Inicializar o estado de carregamento para cada filme
         if (isUserAuthenticated) {
           const newListLoading: Record<string, Record<ListType, boolean>> = {};
           
-          // Atualizar o estado de comentários com base na informação retornada pela API
           const newUserComments: Record<string, boolean> = {};
           
           data.movies.forEach(movie => {
@@ -84,7 +79,6 @@ const MovieList: React.FC = () => {
               watchlist: false
             };
             
-            // Se o filme tiver a propriedade userCommented como true, significa que o usuário já comentou este filme
             if (movie.userCommented) {
               newUserComments[movie._id] = true;
             }
@@ -138,41 +132,30 @@ const MovieList: React.FC = () => {
   };
 
   const getPaginationNumbers = () => {
-    // Se houver menos de 8 páginas, simplesmente mostre todas
     if (totalPages <= 7) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
     
-    // Caso contrário, crie uma paginação mais complexa com elipses
     const pageNumbers: (number | {type: string, value: string, targetPage: number})[] = [];
     
-    // Sempre adicione página 1
     pageNumbers.push(1);
     
-    // Se a página atual estiver próxima ao início, não mostre a primeira elipse
     if (currentPage <= 3) {
       pageNumbers.push(2, 3, 4);
     } 
-    // Se a página atual estiver próxima ao fim, não mostre a última elipse
     else if (currentPage >= totalPages - 2) {
-      // Elipse que leva para uma página anterior (currentPage - 3)
       pageNumbers.push({type: 'prev-ellipsis', value: '...', targetPage: totalPages - 4});
       pageNumbers.push(totalPages - 3, totalPages - 2, totalPages - 1);
     } 
-    // Se estiver no meio, mostre elipses nos dois lados
     else {
-      // Elipse que leva para uma página anterior (currentPage - 3)
       pageNumbers.push({type: 'prev-ellipsis', value: '...', targetPage: currentPage - 3});
       pageNumbers.push(currentPage - 1, currentPage, currentPage + 1);
     }
     
-    // Se não estamos muito perto do fim, mostre a elipse final
     if (currentPage < totalPages - 3) {
-      // Elipse que leva para uma página posterior (currentPage + 3)
       pageNumbers.push({type: 'next-ellipsis', value: '...', targetPage: currentPage + 3});
     }
     
-    // Sempre adicione a última página se não for igual à primeira
     if (totalPages > 1) {
       pageNumbers.push(totalPages);
     }
@@ -199,7 +182,6 @@ const MovieList: React.FC = () => {
     }
   };
 
-  // Função para verificar se existem filtros ativos
   const hasActiveFilters = (): boolean => {
     return (
       searchQuery !== '' || 
@@ -209,10 +191,9 @@ const MovieList: React.FC = () => {
     );
   };
   
-  // Função para abrir o modal de comentários
   const handleOpenCommentModal = async (movie: Movie) => {
     if (!isUserAuthenticated) {
-      alert('Você precisa estar logado para comentar.');
+      alert('É necessário estar autenticado para comentar.');
       return;
     }
     
@@ -222,14 +203,13 @@ const MovieList: React.FC = () => {
     setCommentError(null);
     
     try {
-      // Verificar se o usuário já comentou este filme
       const comments = await fetchCommentsByMovieId(movie._id);
       const hasCommented = comments.some(comment => 
         currentUser && comment.name === currentUser.name && comment.email === currentUser.email
       );
       
       if (hasCommented) {
-        setCommentError('Você já comentou este filme!');
+        setCommentError('Já comentou este filme!');
       }
       
       setShowCommentModal(true);
@@ -241,7 +221,6 @@ const MovieList: React.FC = () => {
     }
   };
   
-  // Função para fechar o modal de comentários
   const handleCloseCommentModal = () => {
     setShowCommentModal(false);
     setSelectedMovie(null);
@@ -250,7 +229,6 @@ const MovieList: React.FC = () => {
     setCommentError(null);
   };
   
-  // Função para enviar o comentário
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -306,7 +284,7 @@ const MovieList: React.FC = () => {
 
   const toggleMovieList = async (movie: Movie, listType: ListType) => {
     if (!isUserAuthenticated) {
-      alert('Você precisa estar logado para adicionar filmes às suas listas.');
+      alert('É necessário estar autenticado para adicionar filmes às suas listas.');
       return;
     }
     
@@ -324,21 +302,17 @@ const MovieList: React.FC = () => {
       const currentStatus = movie.userLists?.[listType] || false;
       const isAdding = !currentStatus;
       
-      // Executar a operação na API
       if (isAdding) {
         await addMovieToList(movieId, listType);
       } else {
         await removeMovieFromList(movieId, listType);
       }
       
-      // Atualizar a lista de filmes localmente
       setMovies(prevMovies => prevMovies.map(m => {
         if (m._id !== movieId) return m;
         
-        // Criar uma cópia dos status atuais das listas do usuário
         const currentUserLists = m.userLists || { favorite: false, watched: false, watchlist: false };
         
-        // Se estamos adicionando e é 'watched' ou 'watchlist', precisamos atualizar o estado oposto
         if (isAdding && (listType === 'watched' || listType === 'watchlist')) {
           const oppositeType: ListType = listType === 'watched' ? 'watchlist' : 'watched';
           return {
@@ -346,12 +320,11 @@ const MovieList: React.FC = () => {
             userLists: {
               ...currentUserLists,
               [listType]: true,
-              [oppositeType]: false  // Certificar que o estado oposto é falso
+              [oppositeType]: false
             }
           } as Movie;
         } 
         
-        // Caso contrário, apenas alternar o estado da lista específica
         return {
           ...m,
           userLists: {
@@ -363,7 +336,6 @@ const MovieList: React.FC = () => {
     } catch (err) {
       console.error(`Erro ao atualizar a lista ${listType}:`, err);
     } finally {
-      // Restaurar estado de carregamento
       setListLoading(prev => ({
         ...prev,
         [movieId]: {
@@ -384,7 +356,7 @@ const MovieList: React.FC = () => {
 
   return (
     <div>
-      <h1 className="mb-4 cosmic-title">MoviePlanet - O teu planeta de cinema!</h1>
+      <h1 className="mb-4 cosmic-title">MoviePlanet - O seu planeta de cinema!</h1>
       
       <div className="card space-card mb-4">
         <div className="card-body">
@@ -449,9 +421,9 @@ const MovieList: React.FC = () => {
                   }}
                 >
                   <option value="">Todos os filmes</option>
-                  <option value="favorite">Meus Favoritos</option>
-                  <option value="watched">Filmes Assistidos</option>
-                  <option value="watchlist">Quero Assistir</option>
+                  <option value="favorite">Os Meus Favoritos</option>
+                  <option value="watched">Filmes Vistos</option>
+                  <option value="watchlist">Quero Ver</option>
                 </select>
               </div>
               )}
@@ -494,9 +466,9 @@ const MovieList: React.FC = () => {
               {filterParams.genre && <span> do género <strong>{filterParams.genre}</strong></span>}
               {filterParams.userListType && (
                 <span> na lista <strong>
-                  {filterParams.userListType === 'favorite' && 'Meus Favoritos'}
-                  {filterParams.userListType === 'watched' && 'Filmes Assistidos'}
-                  {filterParams.userListType === 'watchlist' && 'Quero Assistir'}
+                  {filterParams.userListType === 'favorite' && 'Os Meus Favoritos'}
+                  {filterParams.userListType === 'watched' && 'Filmes Vistos'}
+                  {filterParams.userListType === 'watchlist' && 'Quero Ver'}
                 </strong></span>
               )}
               {filterParams.sort !== SortOption.RATING_DESC && 
@@ -567,7 +539,7 @@ const MovieList: React.FC = () => {
                           className={`btn ${movie.userLists?.watched ? 'btn-success' : 'btn-outline-success'}`} 
                           onClick={() => toggleMovieList(movie, 'watched')}
                           disabled={listLoading[movie._id]?.watched}
-                          title={movie.userLists?.watched ? "Remover dos assistidos" : "Adicionar aos assistidos"}
+                          title={movie.userLists?.watched ? "Remover dos vistos" : "Adicionar aos vistos"}
                         >
                           {listLoading[movie._id]?.watched ? (
                             <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -579,7 +551,7 @@ const MovieList: React.FC = () => {
                           className={`btn ${movie.userLists?.watchlist ? 'btn-warning' : 'btn-outline-warning'}`} 
                           onClick={() => toggleMovieList(movie, 'watchlist')}
                           disabled={listLoading[movie._id]?.watchlist}
-                          title={movie.userLists?.watchlist ? "Remover da lista de desejos" : "Adicionar à lista de desejos"}
+                          title={movie.userLists?.watchlist ? "Remover da lista para ver" : "Adicionar à lista para ver"}
                         >
                           {listLoading[movie._id]?.watchlist ? (
                             <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -605,7 +577,6 @@ const MovieList: React.FC = () => {
             </span>
           </div>
           <ul className="pagination justify-content-center">
-            {/* Primeira página sempre visível */}
             <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
               <button 
                 className="page-link" 
@@ -618,7 +589,6 @@ const MovieList: React.FC = () => {
               </button>
             </li>
             
-            {/* Página anterior */}
             <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
               <button 
                 className="page-link" 
@@ -631,9 +601,7 @@ const MovieList: React.FC = () => {
               </button>
             </li>
             
-            {/* Números de página e elipses */}
             {getPaginationNumbers().map((pageNum, index) => {
-              // Verificar se o item é um número ou um objeto de elipse
               const isNumber = typeof pageNum === 'number';
               const isCurrentPage = isNumber && pageNum === currentPage;
               const ellipsis = !isNumber ? pageNum : null;
@@ -657,7 +625,6 @@ const MovieList: React.FC = () => {
               );
             })}
             
-            {/* Próxima página */}
             <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
               <button 
                 className="page-link" 
@@ -670,7 +637,6 @@ const MovieList: React.FC = () => {
               </button>
             </li>
             
-            {/* Última página sempre visível */}
             <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
               <button 
                 className="page-link" 
@@ -686,7 +652,6 @@ const MovieList: React.FC = () => {
         </nav>
       )}
       
-      {/* Modal de Comentários usando HTML puro com classes Bootstrap */}
       {showCommentModal && (
         <div className="modal fade show" tabIndex={-1} role="dialog" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered" role="document">
@@ -709,7 +674,7 @@ const MovieList: React.FC = () => {
                 {!commentError && (
                   <form onSubmit={handleSubmitComment}>
                     <div className="mb-3">
-                      <label htmlFor="commentText" className="form-label fw-bold text-start d-block text-star">Seu Comentário</label>
+                      <label htmlFor="commentText" className="form-label fw-bold text-start d-block text-star">O Seu Comentário</label>
                       <textarea
                         className="form-control"
                         id="commentText"
@@ -718,7 +683,7 @@ const MovieList: React.FC = () => {
                         onChange={(e) => setCommentText(e.target.value)}
                         disabled={commentLoading}
                         required
-                        placeholder="Escreva sua opinião sobre o filme..."
+                        placeholder="Escreva a sua opinião sobre o filme..."
                       ></textarea>
                     </div>
                     
@@ -773,7 +738,6 @@ const MovieList: React.FC = () => {
         </div>
       )}
       
-      {/* Backdrop para cliques fora do modal */}
       {showCommentModal && (
         <div className="modal-backdrop fade show" onClick={handleCloseCommentModal}></div>
       )}
