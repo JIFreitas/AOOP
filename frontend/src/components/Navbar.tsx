@@ -49,7 +49,7 @@ const Navbar: React.FC = () => {
     setUser(null);
     // Disparar evento para informar outras partes do app sobre a mudança de autenticação
     window.dispatchEvent(new Event('auth-change'));
-    navigate('/login');
+    navigate('/');
   };
 
   return (
@@ -77,16 +77,16 @@ const Navbar: React.FC = () => {
             {authenticated ? (
               <>
                 <li className="nav-item dropdown">
-                  <a 
+                  <button 
                     className="nav-link dropdown-toggle" 
-                    href="#" 
                     id="userDropdown" 
-                    role="button" 
+                    type="button"
                     data-bs-toggle="dropdown" 
                     aria-expanded="false"
+                    style={{ background: 'transparent', border: 'none' }}
                   >
                     <i className="bi bi-person-circle me-1"></i> {user?.name || 'Utilizador'}
-                  </a>
+                  </button>
                   <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" 
                       style={{ background: 'var(--space-deeper)', borderColor: 'var(--space-blue)' }}>
                     <li>

@@ -10,27 +10,32 @@ import {
   UpdateComment,
   addMovieToList,
   removeMovieFromList,
-  checkMovieInLists,
   MovieListStatus,
   ListType
 } from '../services/api';
 import { Movie } from '../types/MovieTypes';
 import { isAuthenticated, getCurrentUser } from '../services/authService';
+import { Notification } from '../utils/notification';
 
 const MovieDetail: React.FC = () => {
+  // Estados relacionados ao filme e comentários
   const { id } = useParams<{ id: string }>();
   const [movie, setMovie] = useState<Movie | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Estados relacionados ao formulário de comentário
+  const [showCommentForm, setShowCommentForm] = useState<boolean>(false);
+  const [userHasCommented, setUserHasCommented] = useState<boolean>(false);
+  const [userComment, setUserComment] = useState<Comment | null>(null);
   const [commentFormError, setCommentFormError] = useState<string | null>(null);
   const [commentLoading, setCommentLoading] = useState<boolean>(false);
-  
   const [newComment, setNewComment] = useState({
     text: '',
     rating: 5
   });
-
+  
   // Estados para edição de comentário
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState<string>('');
@@ -38,14 +43,11 @@ const MovieDetail: React.FC = () => {
   const [editCommentError, setEditCommentError] = useState<string | null>(null);
   const [editCommentLoading, setEditCommentLoading] = useState<boolean>(false);
   
+  // Estados para exclusão de comentário
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [commentToDelete, setCommentToDelete] = useState<Comment | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
 
-  const [showCommentForm, setShowCommentForm] = useState<boolean>(false);
-  const [userHasCommented, setUserHasCommented] = useState<boolean>(false);
-  const [userComment, setUserComment] = useState<Comment | null>(null);
-  
   // Verificar se o usuário está autenticado
   const isUserAuthenticated = isAuthenticated();
   const currentUser = getCurrentUser();
@@ -82,7 +84,14 @@ const MovieDetail: React.FC = () => {
         // Verificar se o usuário atual já comentou este filme com base nos dados retornados pela API
         if (isUserAuthenticated && movieData.userComment) {
           setUserHasCommented(true);
-          setUserComment(movieData.userComment);
+          const userCommentData = movieData.userComment;
+          setUserComment(userCommentData);
+          
+          // Pré-preencher o formulário se o usuário já tem um comentário
+          setNewComment({
+            text: userCommentData.text,
+            rating: userCommentData.rating || 5
+          });
         } else {
           setUserHasCommented(false);
           setUserComment(null);
@@ -131,6 +140,7 @@ const MovieDetail: React.FC = () => {
       const commentData = {
         movie_id: id,
         name: currentUser?.name || 'Anônimo',
+        email: currentUser?.email, // Adicionando o email do usuário autenticado
         text: newComment.text,
         rating: newComment.rating
       };
@@ -144,22 +154,7 @@ const MovieDetail: React.FC = () => {
         setShowCommentForm(false);
         
         // Mostrar mensagem de sucesso em uma div flutuante que desaparece após alguns segundos
-        const successAlert = document.createElement('div');
-        successAlert.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-4 shadow-lg';
-        successAlert.style.zIndex = '9999';
-        successAlert.style.maxWidth = '350px';
-        successAlert.innerHTML = `
-          <div class="d-flex align-items-center">
-            <i class="bi bi-check-circle-fill me-2"></i>
-            <span>Comentário adicionado com sucesso!</span>
-          </div>
-        `;
-        document.body.appendChild(successAlert);
-        
-        // Remover a notificação após 3 segundos
-        setTimeout(() => {
-          document.body.removeChild(successAlert);
-        }, 3000);
+        Notification.success('Comentário adicionado com sucesso!');
       }
     } catch (err) {
       console.error('Error adding comment:', err);
@@ -176,7 +171,6 @@ const MovieDetail: React.FC = () => {
   const handleEditComment = (comment: Comment) => {
     setEditingCommentId(comment._id);
     setEditCommentText(comment.text);
-    //TODO: Verificar se o rating é um número válido antes de definir o estado
     setEditCommentRating(comment.rating ?? 5);
   };
 
@@ -249,16 +243,13 @@ const MovieDetail: React.FC = () => {
     
     try {
       const isInList = movieLists[listType];
+      const isAdding = !isInList;
       
-      if (isInList) {
-        // Remover da lista
-        await removeMovieFromList(id, listType);
-        setMovieLists(prev => ({ ...prev, [listType]: false }));
-      } else {
+      if (isAdding) {
         // Adicionar à lista
         await addMovieToList(id, listType);
         
-        // Se a lista for assistido/quero assistir, precisamos atualizar o estado contrário
+        // Se a lista for assistido/quero assistir, atualizar o estado contrário
         if (listType === 'watched' || listType === 'watchlist') {
           const oppositeType: ListType = listType === 'watched' ? 'watchlist' : 'watched';
           setMovieLists(prev => ({ 
@@ -269,24 +260,39 @@ const MovieDetail: React.FC = () => {
         } else {
           setMovieLists(prev => ({ ...prev, [listType]: true }));
         }
+      } else {
+        // Remover da lista
+        await removeMovieFromList(id, listType);
+        setMovieLists(prev => ({ ...prev, [listType]: false }));
       }
     } catch (err) {
-      console.error(`Erro ao atualizar lista ${listType}:`, err);
+      console.error(`Erro ao atualizar a lista ${listType}:`, err);
     } finally {
       setListLoading(prev => ({ ...prev, [listType]: false }));
     }
   };
 
+  // Melhorando a lógica de retorno condicional para estados de loading e erro
   if (loading) {
-    return <div className="text-center mt-5"><div className="spinner-border" role="status"></div></div>;
+    return (
+      <div className="text-center my-5">
+        <div className="spinner-border text-cosmic" role="status" style={{ width: "3rem", height: "3rem" }}>
+          <span className="visually-hidden">A carregar...</span>
+        </div>
+      </div>
+    );
   }
 
   if (error || !movie) {
     return (
-      <div className="alert alert-danger">
-        {error || 'Filme não encontrado'}
+      <div className="alert alert-danger p-4">
+        <h4 className="alert-heading"><i className="bi bi-exclamation-triangle me-2"></i>Erro</h4>
+        <p>{error || 'Filme não encontrado'}</p>
+        <hr />
         <div className="mt-3">
-          <Link to="/" className="btn btn-primary">Voltar para a página inicial</Link>
+          <Link to="/" className="btn btn-cosmic">
+            <i className="bi bi-house-door me-2"></i>Voltar para a página inicial
+          </Link>
         </div>
       </div>
     );
@@ -511,12 +517,12 @@ const MovieDetail: React.FC = () => {
                   className={`btn ${showCommentForm ? 'btn-cosmic-outline' : 'btn-cosmic'}`}
                   onClick={toggleCommentForm}
                   disabled={userHasCommented}
-                  title={userHasCommented ? "Você já comentou este filme" : ""}
+                  title={userHasCommented && userComment ? `Seu comentário: ${userComment.text.substring(0, 30)}...` : ""}
                 >
                   {showCommentForm ? (
                     <><i className="bi bi-x-circle me-2"></i>Fechar formulário</>
                   ) : userHasCommented ? (
-                    <><i className="bi bi-check-circle me-2"></i>Já comentado</>
+                    <><i className="bi bi-check-circle me-2"></i>Já comentado {userComment && `(${userComment.rating}/5)`}</>
                   ) : (
                     <><i className="bi bi-plus-circle me-2"></i>Adicionar comentário</>
                   )}

@@ -273,16 +273,13 @@ const MovieList: React.FC = () => {
       
       await addComment(commentData);
       
-      // Adicionar este filme à lista de comentados pelo usuário
       setUserComments(prev => ({
         ...prev,
         [selectedMovie._id]: true
       }));
       
-      // Fechar o modal e limpar os estados
       setShowCommentModal(false);
       
-      // Mostrar mensagem de sucesso em uma div flutuante que desaparece após alguns segundos
       const successAlert = document.createElement('div');
       successAlert.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-4 shadow-lg';
       successAlert.style.zIndex = '9999';
@@ -295,7 +292,6 @@ const MovieList: React.FC = () => {
       `;
       document.body.appendChild(successAlert);
       
-      // Remover a notificação após 3 segundos
       setTimeout(() => {
         document.body.removeChild(successAlert);
       }, 3000);
@@ -308,7 +304,6 @@ const MovieList: React.FC = () => {
     }
   };
 
-  // Função para alternar o status de um filme em uma lista
   const toggleMovieList = async (movie: Movie, listType: ListType) => {
     if (!isUserAuthenticated) {
       alert('Você precisa estar logado para adicionar filmes às suas listas.');
@@ -317,7 +312,6 @@ const MovieList: React.FC = () => {
     
     const movieId = movie._id;
     
-    // Atualizar o estado de carregamento para este filme e tipo de lista
     setListLoading(prev => ({
       ...prev,
       [movieId]: {
@@ -328,63 +322,48 @@ const MovieList: React.FC = () => {
     
     try {
       const currentStatus = movie.userLists?.[listType] || false;
+      const isAdding = !currentStatus;
       
-      if (currentStatus) {
-        // Remover da lista
-        await removeMovieFromList(movieId, listType);
-        
-        // Atualizar o objeto do filme diretamente na lista de filmes
-        setMovies(prevMovies => prevMovies.map(m => {
-          if (m._id === movieId) {
-            // Garantir que userLists exista, usando um objeto vazio como fallback
-            const currentUserLists = m.userLists || { favorite: false, watched: false, watchlist: false };
-            return {
-              ...m,
-              userLists: {
-                ...currentUserLists,
-                [listType]: false
-              }
-            } as Movie; // Forçar o tipo para Movie
-          }
-          return m;
-        }));
-      } else {
-        // Adicionar à lista
+      // Executar a operação na API
+      if (isAdding) {
         await addMovieToList(movieId, listType);
-        
-        // Atualizar o objeto do filme diretamente na lista de filmes
-        setMovies(prevMovies => prevMovies.map(m => {
-          if (m._id === movieId) {
-            // Garantir que userLists exista, usando um objeto vazio como fallback
-            const currentUserLists = m.userLists || { favorite: false, watched: false, watchlist: false };
-            
-            // Se a lista for assistido/quero assistir, precisamos atualizar o estado contrário
-            if (listType === 'watched' || listType === 'watchlist') {
-              const oppositeType: ListType = listType === 'watched' ? 'watchlist' : 'watched';
-              return {
-                ...m,
-                userLists: {
-                  ...currentUserLists,
-                  [listType]: true,
-                  [oppositeType]: false
-                }
-              } as Movie; // Forçar o tipo para Movie
-            } else {
-              return {
-                ...m,
-                userLists: {
-                  ...currentUserLists,
-                  [listType]: true
-                }
-              } as Movie; // Forçar o tipo para Movie
-            }
-          }
-          return m;
-        }));
+      } else {
+        await removeMovieFromList(movieId, listType);
       }
+      
+      // Atualizar a lista de filmes localmente
+      setMovies(prevMovies => prevMovies.map(m => {
+        if (m._id !== movieId) return m;
+        
+        // Criar uma cópia dos status atuais das listas do usuário
+        const currentUserLists = m.userLists || { favorite: false, watched: false, watchlist: false };
+        
+        // Se estamos adicionando e é 'watched' ou 'watchlist', precisamos atualizar o estado oposto
+        if (isAdding && (listType === 'watched' || listType === 'watchlist')) {
+          const oppositeType: ListType = listType === 'watched' ? 'watchlist' : 'watched';
+          return {
+            ...m,
+            userLists: {
+              ...currentUserLists,
+              [listType]: true,
+              [oppositeType]: false  // Certificar que o estado oposto é falso
+            }
+          } as Movie;
+        } 
+        
+        // Caso contrário, apenas alternar o estado da lista específica
+        return {
+          ...m,
+          userLists: {
+            ...currentUserLists,
+            [listType]: isAdding
+          }
+        } as Movie;
+      }));
     } catch (err) {
-      console.error(`Erro ao atualizar lista ${listType} para o filme ${movieId}:`, err);
+      console.error(`Erro ao atualizar a lista ${listType}:`, err);
     } finally {
+      // Restaurar estado de carregamento
       setListLoading(prev => ({
         ...prev,
         [movieId]: {
