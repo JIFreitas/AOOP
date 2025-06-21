@@ -13,6 +13,7 @@ import {
 } from '../services/api';
 import { Movie } from '../types/MovieTypes';
 import { isAuthenticated, getCurrentUser } from '../services/authService';
+import ChatButton from './ChatButton';
 
 const MovieList: React.FC = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -754,11 +755,17 @@ const MovieList: React.FC = () => {
           </div>
         </div>
       )}
-      
-      {/* Backdrop para cliques fora do modal */}
+        {/* Backdrop para cliques fora do modal */}
       {showCommentModal && (
         <div className="modal-backdrop fade show" onClick={handleCloseCommentModal}></div>
       )}
+
+      {/* Chat Button com contexto do filtro atual */}
+      <ChatButton
+        movieContext={{
+          genre: selectedGenre || undefined
+        }}
+      />
     </div>
   );
 };

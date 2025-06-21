@@ -66,27 +66,31 @@ const Navbar: React.FC = () => {
         >
           <span className="navbar-toggler-icon"></span>
         </button>
-        <div className="collapse navbar-collapse" id="navbarNav">
+        <div className="collapse navbar-collapse" id="navbarNav">          
           <ul className="navbar-nav me-auto">
             <li className="nav-item">
               <Link className="nav-link" to="/">Home page</Link>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link" to="/chat">
+                <i className="bi bi-robot me-1"></i>Chat de Filmes
+              </Link>
             </li>
           </ul>
           
           <ul className="navbar-nav">
             {authenticated ? (
-              <>
-                <li className="nav-item dropdown">
-                  <a 
-                    className="nav-link dropdown-toggle" 
-                    href="#" 
+              <>                
+              <li className="nav-item dropdown">                  
+                <button 
+                    className="nav-link dropdown-toggle btn btn-link text-light" 
                     id="userDropdown" 
-                    role="button" 
                     data-bs-toggle="dropdown" 
                     aria-expanded="false"
+                    style={{ border: 'none', background: 'none', padding: '0.5rem 1rem' }}
                   >
                     <i className="bi bi-person-circle me-1"></i> {user?.name || 'Utilizador'}
-                  </a>
+                  </button>
                   <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" 
                       style={{ background: 'var(--space-deeper)', borderColor: 'var(--space-blue)' }}>
                     <li>

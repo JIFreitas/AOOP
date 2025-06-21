@@ -3,14 +3,12 @@ import { Movie } from '../types/MovieTypes';
 import { handleApiError, handleAndNotifyError } from './errorHandler';
 import { getToken } from './authService';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_MOVIE_API_URL || 'http://localhost:5000/api';
 
-// Criando uma instância do axios com configuração base
 const apiClient = axios.create({
   baseURL: API_URL
 });
 
-// Adicionando um interceptor para incluir o token de autenticação em todas as requisições
 apiClient.interceptors.request.use(
   (config) => {
     const token = getToken();
@@ -232,5 +230,78 @@ export const getMoviesFromList = async (listType: ListType): Promise<Movie[]> =>
   } catch (error) {
     handleAndNotifyError(error);
     return [];
+  }
+};
+
+// Configuração do Chatbot
+const CHATBOT_API_URL = process.env.REACT_APP_CHATBOT_API_URL || 'http://localhost:3001';
+
+export interface ChatMessage {
+  mensagem: string;
+}
+
+export interface ChatResponse {
+  resposta: string;
+  timestamp?: string;
+  status?: string;
+  metadata?: {
+    totalFilmes?: number;
+    fonte?: string;
+  };
+}
+
+export interface ChatError {
+  erro: string;
+  detalhes?: string;
+  timestamp?: string;
+  status?: string;
+}
+
+// Funções do Chatbot
+export const sendChatMessage = async (message: string): Promise<ChatResponse> => {
+  try {
+    const response = await fetch(`${CHATBOT_API_URL}/chatbot`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        mensagem: message.trim()
+      })
+    });
+
+    if (!response.ok) {
+      const errorData: ChatError = await response.json().catch(() => ({
+        erro: `Erro HTTP: ${response.status}`,
+        timestamp: new Date().toISOString()
+      }));
+      
+      throw new Error(errorData.erro || `Erro ${response.status}: ${response.statusText}`);
+    }
+
+    const data: ChatResponse = await response.json();
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('fetch')) {
+        throw new Error('Não foi possível conectar ao chatbot. Verifique se o serviço está ativo.');
+      }
+      throw error;
+    }
+    throw new Error('Erro desconhecido ao comunicar com o chatbot');
+  }
+};
+
+export const checkChatbotStatus = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(`${CHATBOT_API_URL}/chatbot/status`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    return response.ok;
+  } catch (error) {
+    return false;
   }
 };

@@ -16,6 +16,7 @@ import {
 } from '../services/api';
 import { Movie } from '../types/MovieTypes';
 import { isAuthenticated, getCurrentUser } from '../services/authService';
+import ChatButton from './ChatButton';
 
 const MovieDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -750,11 +751,19 @@ const MovieDetail: React.FC = () => {
           </div>
         </div>
       )}
-      
-      {/* Backdrop para os modais quando estiverem abertos */}
+        {/* Backdrop para os modais quando estiverem abertos */}
       {(editingCommentId || showDeleteModal) && (
         <div className="modal-backdrop fade show"></div>
       )}
+
+      {/* Chat Button com contexto do filme */}
+      <ChatButton
+        movieContext={{
+          title: movie?.title,
+          genre: movie?.genres?.[0],
+          year: movie?.year
+        }}
+      />
     </div>
   );
 };
