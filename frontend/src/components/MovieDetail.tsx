@@ -15,11 +15,8 @@ import {
 } from '../services/api';
 import { Movie } from '../types/MovieTypes';
 import { isAuthenticated, getCurrentUser } from '../services/authService';
-<<<<<<< HEAD
-import ChatButton from './ChatButton';
-=======
 import { Notification } from '../utils/notification';
->>>>>>> 3d0f87e61c7b2752fea167974d1c1f315816e16c
+import ChatButton from './ChatButton';
 
 const MovieDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
