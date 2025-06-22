@@ -71,11 +71,6 @@ const Navbar: React.FC = () => {
             <li className="nav-item">
               <Link className="nav-link" to="/">Home page</Link>
             </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/chat">
-                <i className="bi bi-robot me-1"></i>Chat de Filmes
-              </Link>
-            </li>
           </ul>
           
           <ul className="navbar-nav">
