@@ -49,7 +49,7 @@ const Navbar: React.FC = () => {
     setUser(null);
     // Disparar evento para informar outras partes do app sobre a mudança de autenticação
     window.dispatchEvent(new Event('auth-change'));
-    navigate('/login');
+    navigate('/');
   };
 
   return (

@@ -1,6 +1,7 @@
 import { ImdbRating } from './ImdbTypes';
 import { TomatoesRating } from './TomatoesTypes';
 import { Awards } from './AwardsTypes';
+import { Comment } from '../services/api';
 
 export interface UserLists {
   favorite: boolean;
@@ -30,4 +31,6 @@ export interface Movie {
   num_mflix_comments?: number;
   lastupdated?: string;
   userLists?: UserLists;
+  userCommented?: boolean; // Indica se o usuário autenticado já comentou este filme
+  userComment?: Comment; // O comentário do usuário autenticado, se existir
 }

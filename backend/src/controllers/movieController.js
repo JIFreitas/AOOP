@@ -29,14 +29,18 @@ exports.getMovies = async (req, res) => {
       query.genres = { $regex: genre, $options: 'i' };
     }
 
-    // Configurar a ordenação com base no parâmetro sort
-    let sortConfig = { title: 1 }; // Padrão: título em ordem crescente
+    let sortConfig = { title: 1 };
     
-    // Adicionar filtro adicional para filmes com avaliação se estiver ordenando por avaliação
     if (sort === 'rating_asc' || sort === 'rating_desc') {
-      // Garantir que apenas filmes com avaliação do IMDB sejam incluídos
-      query['imdb.rating'] = { $exists: true, $ne: null, $gt: 0 };
-      query['imdb'] = { $exists: true, $ne: null };
+      // Garantir que apenas filmes com avaliação válida do IMDB sejam incluídos
+      // Usando operadores mais específicos para pegar apenas ratings numéricos
+      query.$and = [
+        { 'imdb.rating': { $exists: true } },
+        { 'imdb.rating': { $ne: null } },
+        { 'imdb.rating': { $ne: "" } },
+        { 'imdb.rating': { $type: ['int', 'double', 'decimal', 'long'] } },
+        { 'imdb.rating': { $gt: 0 } }
+      ];
     }
     
     switch(sort) {
@@ -119,9 +123,25 @@ exports.getAllMovies = async (req, res) => {
         break;
       case 'rating_asc':
         sortOptions['imdb.rating'] = 1;
+        // Para ordenação por rating, excluir filmes com rating vazio, inválido ou tipo string
+        query.$and = [
+          { 'imdb.rating': { $exists: true } },
+          { 'imdb.rating': { $ne: null } },
+          { 'imdb.rating': { $ne: "" } },
+          { 'imdb.rating': { $type: ['int', 'double', 'decimal', 'long'] } },
+          { 'imdb.rating': { $gt: 0 } }
+        ];
         break;
       case 'rating_desc':
         sortOptions['imdb.rating'] = -1;
+        // Para ordenação por rating, excluir filmes com rating vazio, inválido ou tipo string
+        query.$and = [
+          { 'imdb.rating': { $exists: true } },
+          { 'imdb.rating': { $ne: null } },
+          { 'imdb.rating': { $ne: "" } },
+          { 'imdb.rating': { $type: ['int', 'double', 'decimal', 'long'] } },
+          { 'imdb.rating': { $gt: 0 } }
+        ];
         break;
       default:
         sortOptions.title = 1;
@@ -234,9 +254,25 @@ exports.getMoviesWithUserStatus = async (req, res) => {
         break;
       case 'rating_asc':
         sortOptions['imdb.rating'] = 1;
+        // Para ordenação por rating, excluir filmes com rating vazio, inválido ou tipo string
+        query.$and = [
+          { 'imdb.rating': { $exists: true } },
+          { 'imdb.rating': { $ne: null } },
+          { 'imdb.rating': { $ne: "" } },
+          { 'imdb.rating': { $type: ['int', 'double', 'decimal', 'long'] } },
+          { 'imdb.rating': { $gt: 0 } }
+        ];
         break;
       case 'rating_desc':
         sortOptions['imdb.rating'] = -1;
+        // Para ordenação por rating, excluir filmes com rating vazio, inválido ou tipo string
+        query.$and = [
+          { 'imdb.rating': { $exists: true } },
+          { 'imdb.rating': { $ne: null } },
+          { 'imdb.rating': { $ne: "" } },
+          { 'imdb.rating': { $type: ['int', 'double', 'decimal', 'long'] } },
+          { 'imdb.rating': { $gt: 0 } }
+        ];
         break;
       default:
         sortOptions.title = 1;
@@ -300,6 +336,19 @@ exports.getMoviesWithUserStatus = async (req, res) => {
         movie_id: { $in: movieIds }
       }).lean();
       
+      // Buscar comentários feitos pelo usuário para os filmes atuais
+      const Comment = require('../models/Comment');
+      const userComments = await Comment.find({
+        movie_id: { $in: movieIds },
+        email: req.user.email
+      }).select('movie_id').lean();
+      
+      // Criar um mapa de IDs de filmes que o usuário já comentou
+      const userCommentedMovies = {};
+      userComments.forEach(comment => {
+        userCommentedMovies[comment.movie_id.toString()] = true;
+      });
+      
       // Inicializar o mapa de status de listas para todos os filmes
       const movieListsMap = {};
       movieIds.forEach(movieId => {
@@ -333,7 +382,8 @@ exports.getMoviesWithUserStatus = async (req, res) => {
         // Adicionar status diretamente no objeto do filme
         return {
           ...movie,
-          userLists: listStatus
+          userLists: listStatus,
+          userCommented: userCommentedMovies[movieId] || false
         };
       });
     } else {
@@ -344,7 +394,8 @@ exports.getMoviesWithUserStatus = async (req, res) => {
           favorite: false,
           watched: false,
           watchlist: false
-        }
+        },
+        userCommented: false
       }));
     }
 
@@ -371,6 +422,60 @@ exports.getMovieById = async (req, res) => {
       return res.status(404).json({ message: 'Filme não encontrado' });
     }
     res.json(movie);
+  } catch (err) {
+    res.status(500).json({ 
+      message: 'Erro ao buscar filme',
+      error: err.message 
+    });
+  }
+};
+
+// Get a single movie by ID with user status
+exports.getMovieWithUserStatus = async (req, res) => {
+  try {
+    const movie = await Movie.findById(req.params.id).lean();
+    
+    if (!movie) {
+      return res.status(404).json({ message: 'Filme não encontrado' });
+    }
+    
+    // Inicializar com valores padrão
+    let result = {
+      ...movie,
+      userLists: {
+        favorite: false,
+        watched: false,
+        watchlist: false
+      },
+      userComment: null
+    };
+    
+    // Adicionar informações sobre listas e comentários do usuário, se autenticado
+    if (req.user) {
+      // Verificar status das listas do usuário para este filme
+      const userLists = await UserMovieList.find({
+        user_id: req.user._id,
+        movie_id: movie._id
+      }).lean();
+      
+      // Atualizar o status das listas do usuário
+      userLists.forEach(list => {
+        result.userLists[list.list_type] = true;
+      });
+      
+      // Verificar se o usuário já comentou este filme
+      const Comment = require('../models/Comment');
+      const userComment = await Comment.findOne({
+        movie_id: movie._id,
+        email: req.user.email
+      }).lean();
+      
+      if (userComment) {
+        result.userComment = userComment;
+      }
+    }
+    
+    res.json(result);
   } catch (err) {
     res.status(500).json({ 
       message: 'Erro ao buscar filme',
