@@ -62,15 +62,11 @@ exports.getMovies = async (req, res) => {
         sortConfig = { title: 1 };
     }
 
-    // Usar a conexão nativa do MongoDB para ter mais controle
     const db = mongoose.connection;
     const collection = db.collection('movies');
     
-    // Contagem total para paginação
     const total = await collection.countDocuments(query);
     
-    // IMPORTANTE: Reordenando o pipeline para colocar $match e $sort no início,
-    // antes de $skip e $limit, para melhor aproveitamento dos índices
     const movies = await collection.aggregate([
       { $match: query },  // Primeiro filtramos os documentos
       { $sort: sortConfig }, // Em seguida, ordenamos (usando índices)

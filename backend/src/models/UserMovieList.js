@@ -11,7 +11,6 @@ const userMovieListSchema = new mongoose.Schema({
     ref: 'Movie',
     required: true
   },
-  // Tipo de lista: favorite (favorito), watched (assistido), watchlist (quero assistir)
   list_type: {
     type: String,
     enum: ['favorite', 'watched', 'watchlist'],
@@ -23,7 +22,6 @@ const userMovieListSchema = new mongoose.Schema({
   }
 });
 
-// Índice composto para garantir que não haja duplicidades de filmes na mesma lista para o mesmo usuário
 userMovieListSchema.index({ user_id: 1, movie_id: 1, list_type: 1 }, { unique: true });
 
 const UserMovieList = mongoose.model('UserMovieList', userMovieListSchema, 'user_movie_lists');
